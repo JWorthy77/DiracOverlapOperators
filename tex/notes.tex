@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\pagecolor{white}
+\usepackage{geometry}
+\geometry{a4paper}
+
+
+\begin{document}
+
+
+\section{Dirac Overlap Operator Code Notes}
+
+The primary calculation of the code is of measurements of the Dirac bilinear condensate using a sequence of Thirring auxiliary fields, labelled con.XXXXX generated with the separate RHMC code. 
+
+Then this code should be run to make calculations with different Dirac operators, although it is set up for condensate measurements. A number of parameters are hard coded, notably mesh size, domain wall extent (although not the order of the direct formulation of the overlap operator), and domain wall height/overlap mass parameter.
+
+The user should edit the code dirac.f in the top directory FCODE, so that the parallel code with taskid 2 is uncommented. The user must supply input file noisycondopts.txt which contains in the first line fstart fstop fskip nnoise (no commas). This controls which con.XXXXX files are read in and nnoise is the number of noisy estimators averaged for each auxiliary file. Finally the options for the operator are given in the first line of olopts.txt and have dwkernel, MTYPE, baremass, Nterms, ZOLO, lmin, lmax. 
+
+dwkernel - integer - 1: Shamir, 2: Wilson
+
+MTYPE - integer - 1: standard mass terms 3: twisted mass terms
+
+baremass - real 
+
+Nterms - integer - number of terms in the sign approximation
+
+ZOLO - booleam - true or false - whether to use the Zolotarev approximation
+
+lmin - real - lower bound for zolo approx
+
+lmax - real - upper bound for zolo approx
+
+The directory of the auxiliary files must be given in quotaion marks in the first line of confiledir.txt and the second line is the integer set to 1. Set to 2 if using a converted form of the auxiliary file.
+
+The parallelism just sends the evaluation on each auxiliary file to a different processor. The first processor is only a controller and does not do any caculation. 
+
+Note: When reading in a con.XXXXX file the code must always be parallel, even if running on a sinle processor.
+
+Note: The code is in the FCODE directory. Ignore the CCODE directory.
+
+\end{document}
+

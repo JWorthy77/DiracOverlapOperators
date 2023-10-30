@@ -5,11 +5,26 @@
       subroutine testRatFuncs
       implicit none
 
-      call testRationalFunctions()
+      call testZoloCoeffs()
+!      call testRationalFunctions()
 !      call checkRationalFunctionCoeffs()
 
       return
       end subroutine testRatFuncs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine testZoloCoeffs
+      use zolomodule
+      use ratfuncs
+      implicit none
+      type(zolotarev) :: zolo
+      type(sgnratfunc) :: SRF
+
+      call setZolo(1d-3,10d0,21,zolo)
+      call getRoots(zolo)
+      call setZoloCoeffs(21,SRF,1d-3,10d0)
+      
+      print *,"roots: ",zolo%roots
+      end subroutine testZoloCoeffs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine testRationalFunctions()
       use numbers

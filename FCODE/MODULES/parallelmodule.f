@@ -325,24 +325,24 @@ c     &           status='unknown',form='formatted')
       write(24,*) "nfields:",ntasks
       close(24)     
 
-      scmd="rm confiledir.txt"
-      call system(scmd)
-      scmd="rm machine*"
-      call system(scmd)
-      scmd="rm olopts.txt"
-      call system(scmd)
-      scmd="rm noisycondopts.txt"
-      call system(scmd)
-      scmd="rm out.dat"
-      call system(scmd)
-      scmd="rm condDetails000.dat"
-      call system(scmd)
-      scmd="rm condDetails001.dat"
-      call system(scmd)
-      scmd="rm out.dat"
-      call system(scmd)
-      scmd="rm scr.run"
-      call system(scmd)
+c      scmd="rm confiledir.txt"
+c      call system(scmd)
+c      scmd="rm machine*"
+c      call system(scmd)
+c      scmd="rm olopts.txt"
+c      call system(scmd)
+c      scmd="rm noisycondopts.txt"
+c      call system(scmd)
+c      scmd="rm out.dat"
+c      call system(scmd)
+c      scmd="rm condDetails000.dat"
+c      call system(scmd)
+c      scmd="rm condDetails001.dat"
+c      call system(scmd)
+c      scmd="rm out.dat"
+c      call system(scmd)
+c      scmd="rm scr.run"
+c      call system(scmd)
 
       return
       end subroutine finalisecondensatetasks

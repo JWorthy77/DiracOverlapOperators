@@ -24,7 +24,7 @@
       RVS_SET=.false.
 
       print *,"Before MPI_INIT"
-      goto 4321
+
       oc_idx=0
       outer_count=0
       ic_idx=0
@@ -92,7 +92,6 @@
 !      call testEigs()
 !      call testZolo(5)
 !      call testZoloFunctions(11,1d-2,100d0)
-!      return
 
 !!!!!! spcify options !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -164,16 +163,16 @@ c      call printOptions()
 
 #ifdef PARALLEL
 
+      ntasks=0 ! ntasks calculated from input
+      call parallelSequence(ntasks,2) ! taskid 2: condensate
 !      ntasks=0 ! ntasks calculated from input
-!      call parallelSequence(ntasks,2) ! condensate
+!      call parallelSequence(ntasks,3) ! taskid 3: condensate slightly differently organised
 !      ntasks=0 ! ntasks calculated from input
-!      call parallelSequence(ntasks,3) ! condensate slightly differently organised
+!      call parallelSequence(ntasks,4) ! taskid 4: overlap spectra range 
 !      ntasks=0 ! ntasks calculated from input
-!      call parallelSequence(ntasks,4) ! overlap spectra range 
-!      ntasks=0 ! ntasks calculated from input
-!      call parallelSequence(ntasks,5) ! quenched condensate
+!      call parallelSequence(ntasks,5) ! taskid 5: quenched condensate
 !      ntasks=100
-!      call parallelSequence(ntasks,1) ! spectra
+!      call parallelSequence(ntasks,1) ! taskid 1: spectra
 #endif 
 
 !!!! calculate condensate !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -275,7 +274,7 @@ c      print *,pbp
       print *,"CPU seconds:",tend-tstart,"CPU mins:",(tend-tstart)/
      &60,"CPU hrs:",(tend-tstart)/3600
 #endif
-4321  continue
+
       end
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine testOperators()
