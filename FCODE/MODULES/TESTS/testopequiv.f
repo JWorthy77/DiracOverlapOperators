@@ -201,36 +201,44 @@ c      print *,'err(DAGGER) ',err
       use gaugefield
       use kernelspectrarange
       implicit none
-      complex(prc),dimension(Nv,4) :: RR,DR1,DR2
+      complex(prc),dimension(Nv,4) :: RR,DR1,DR2,TMP
       real(prc) :: err
       type(sgnratfunc) :: SRF
       type(zolotarev) :: zolo
       integer i1,i2
       real(prc) lmin,lmax
+      complex(prc) :: R5(Nv,4,Ls)
+      complex(prc) :: DR5(Nv,4,Ls)
+      complex(prc) :: TMP5(Nv,4,Ls)
 
       call getMinMaxHEigs(lmin,lmax)
       call setZoloCoeffs(Ls,SRF,lmin,lmax)
       call setZolo(lmin,lmax,Ls,zolo)
       call getRoots(zolo)
-!      omega=one/sqrt(zolo%roots)
       omega=one/zolo%roots
-!      omega=sqrt(zolo%roots)
-!      omega=one
       
       print *,zolo%roots
       call setRVs(Nv*4,RR)
 !      call setHTcoeffs(Ls,SRF)
 
       baremass=0.05
-      
-      MTYPE=3
+      print *,"omega:",omega
+
+      MTYPE=1
       dwkernel=3
       call KDDW4(RR,DR1,u,.false.,baremass)
       dwkernel=2
       call DOLop(RR,DR2,u,.false.,baremass,SRF)
-
       err=maxval(abs(DR1-DR2))
       print *,'DOL-KDDW4 ',err
+
+      MTYPE=1
+      dwkernel=3
+      call IKDDW4(RR,DR1,u,.false.,baremass)
+      dwkernel=2
+      call IDOLop(RR,DR2,u,.false.,baremass,SRF)
+      err=maxval(abs(DR1-DR2))
+      print *,'IDOL-IKDDW4 ',err
 
       stop
 
@@ -332,5 +340,152 @@ ccc   move the following to gamhermtest
 
       return
       end subroutine equivDOL_DDW
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine outputKDDW4()
+      use gammas
+      use overlapmoduledev
+      use dwcoeffs
+      use zolomodule
+      use domainwallmod
+      use rvmodule
+      use gaugefield
+      use condnoisytoolsmod
+      implicit none
+      complex(prc),dimension(Nv,4) :: RR,DR1,DR2,TMP,DR
+      real(prc) :: err
+      type(sgnratfunc) :: SRF
+      type(zolotarev) :: zolo
+      integer i1,i2,j,l,d,Nnoise,Ninstance,i
+      real(prc) lmin,lmax
+      complex(prc) :: R5(Nv,4,Ls)
+      complex(prc) :: DR5(Nv,4,Ls)
+      complex(prc) :: TMP5(Nv,4,Ls)
+      complex(prc) pbp,pbptot,pbpi
+
+      print *,"Test Output KDDW4"
+
+      lmin=1d-1  
+      lmax=5.0  
+      call setZoloCoeffs(Ls,SRF,lmin,lmax)
+      call setZolo(lmin,lmax,Ls,zolo)
+      call getRoots(zolo)
+      omega=one/zolo%roots
+      RR=one
+      baremass=0.01
+      print *,"omega:",omega
+      MTYPE=3
+      dwkernel=3
+      R5=czero
+      R5(:,:,1)=RR
+
+      print *,""
+      print *,"Tests:"
+      print *,""
+
+      if (.false.) then
+        call KDDW(R5,DR5,u,.false.,baremass)
+        print *,"T1:"
+        do l=1,Ls
+         print *,"l:",l
+          do d=1,4
+           print *,"d:",d
+            do j=1,Nv
+              print *,DR5(j,d,l)
+            end do
+          end do
+        end do 
+      end if
+
+      if (.false.) then
+        call KDDW4(RR,DR,u,.false.,baremass)
+        print *,"KDDW4:"
+          do d=1,4
+           print *,"d:",d
+            do j=1,Nv
+              print *,DR(j,d)
+            end do
+          end do
+      end if
+
+      if (.false.) then
+        call IKDDW4(RR,DR,u,.false.,baremass)
+        print *,"IKDDW4:"
+          do d=1,4
+           print *,"d:",d
+            do j=1,Nv
+              print *,DR(j,d)
+            end do
+          end do
+      end if
+
+      if (.false.) then ! single noisy calculation
+        pbptot=0
+        Nnoise=10
+          call setGRVs(3*Nv,theta)
+          call coef(u,theta)
+          do j=1,Nnoise
+            dwkernel=3
+            call evalCondNoisy_KDDW4(u,pbp)
+            pbptot=pbptot+pbp
+!          dwkernel=2
+!          call evalCondNoisy_OL(u,pbp,SRF)
+        end do
+        pbptot=pbptot/Nnoise
+        open(unit=10,file="instanceKDDW4.dat",status='unknown',
+     &                                             access='append')
+        print *,"pbp instance:",pbp
+        write(10,*) "pbp instance:",pbp
+        close(10)
+      end if
+
+
+      if (.true.) then ! measurement
+        open(unit=11,file="condKDDW4.dat",status='unknown',
+     &                                             access='append')
+        pbptot=0
+        Ninstance=10
+        Nnoise=10
+        do i=1,Ninstance
+          call setGRVs(3*Nv,theta)
+          theta=theta/3.0
+          call coef(u,theta)
+          pbpi=0
+          do j=1,Nnoise
+            dwkernel=3
+            call evalCondNoisy_KDDW4(u,pbp)
+            pbpi=pbpi+pbp
+          end do
+          pbpi=pbpi/Nnoise
+          pbptot=pbptot+pbpi
+          print *,"pbp instance:",pbpi
+          write(11,*) "pbp instance:",pbpi
+        end do
+        pbptot=pbptot/Ninstance
+        print *,"pbp average:",pbptot
+        write(11,*) "pbp average:",pbptot
+        close(11)
+      end if
+
+      goto 910
+!      call DDW_OWilson(R5,TMP5,u,.false.,baremass)
+      dwkernel=3
+      call IDDW(R5,TMP5,u,.false.,baremass)
+      call DDW_OWilson(TMP5,DR5,u,.false.,baremass)
+      err=maxval(abs(R5-DR5))
+      print *,"err",err
+
+
+      stop
+
+        call PermM(R5,TMP5,.false.,4)
+        call DDW_OWilson(TMP5,DR5,u,.false.,baremass)
+        MTYPE=1
+        call IDDW(DR5,TMP5,u,.false.,one)
+        call PermM(TMP5,DR5,.true.,4)
+      TMP=DR5(:,:,1)
+910   continue
+
+      return
+      end subroutine outputKDDW4
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module testDequivmod

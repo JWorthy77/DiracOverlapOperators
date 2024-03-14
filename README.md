@@ -3,3 +3,5 @@ Implementations of Dirac Overlap and Domain Wall Operators with either quenched 
 
 The code is a mess!
 
+Want to split into base libraries and different top level codes.
+

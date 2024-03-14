@@ -65,6 +65,10 @@
       end do
       pbp=pbp/Nv
       if(VB_CN)then ; print *,"pbp: ",pbp ; endif
+      open(unit=10,file="condOL.dat",status='unknown',access='append')
+      print *,"pbp:",pbp
+      write(10,*) "pbp:",pbp
+      close(10)
 
       return
       end subroutine evalCondNoisy_OL
@@ -176,8 +180,6 @@ c          trcomp=sum(IDR(:,idx)-one)/denom
       end subroutine evalSubCondNoisy_OL
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine evalCondNoisy_KDDW4(u,pbp)
-c      use rvmodule
-c      use ratfuncs
       use domainwallmod
       implicit none
       complex(prc) u(Nv,3)
@@ -187,37 +189,46 @@ c      use ratfuncs
       integer idx
       complex(prc) trcomp,denom
 
+      if(VB_CN)then ; print *,"evalCondNoisy_KDDW4" ; endif
       pbp=czero
       do idx=1,4
         eta=czero
         call setCGRVs(Nv,eta(:,idx))
         call IKDDW4(eta,IDR,u,.false.,baremass)
-        IDR=conjg(eta)*IDR
+!        IDR=conjg(eta)*IDR
+        IDR=conjg(eta)*(IDR-eta) ! note this crashes for free field, um maybe?
         if (MTYPE.eq.1) then
-          trcomp=sum(IDR(:,idx)-one)/(one-baremass)
+!          trcomp=sum(IDR(:,idx)-one)/(one-baremass)
+          trcomp=sum(IDR(:,idx))/(one-baremass)
         elseif (MTYPE.eq.3) then ! assumes g3=diag(1 1 -1 -1)
           if (idx.eq.1 .or. (idx.eq.2)) then
             denom=cmplx(-baremass,one)
           else
             denom=cmplx(-baremass,-one)
           endif
-          trcomp=sum(IDR(:,idx)-one)/denom
+!          trcomp=sum(IDR(:,idx)-one)/denom
+          trcomp=sum(IDR(:,idx))/denom
         elseif (MTYPE.eq.4) then ! assumes g3=diag(1 1 -1 -1)
           if (idx.eq.1 .or. (idx.eq.2)) then
             denom=-cmplx(baremass,one)
           else
             denom=-cmplx(baremass,-one)
           endif
-          trcomp=sum(IDR(:,idx)-one)/denom
+!          trcomp=sum(IDR(:,idx)-one)/denom
+          trcomp=sum(IDR(:,idx))/denom
         else
           print *,"MASS OPTION NOT AVAILABLE IN evalCondNoisy_OL"
           stop
         endif
-!        print *,trcomp
+        print *,trcomp
         pbp=pbp+trcomp
       end do
       pbp=pbp/Nv
-      print *,pbp
+!      open(unit=10,file="condInstance.dat",status='unknown',
+!     &                                             access='append')
+!      print *,"pbp:",pbp
+!      write(10,*) "pbp:",pbp
+!      close(10)
 
       return
       end subroutine evalCondNoisy_KDDW4

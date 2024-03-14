@@ -24,6 +24,9 @@
         call DOLMS(R,DR,u,DAGGER,mass,SRF)
       elseif (dwkernel.eq.2) then
         call DOLMW(R,DR,u,DAGGER,mass,SRF)
+      else
+        print *,"dwkernel not set to 1 or 2 - exit"
+        stop
       endif
 
       return
@@ -44,6 +47,9 @@
       elseif (dwkernel.eq.2) then
         if(VB_OL)then ; print *,"IDOLMW" ; endif
         call IDOLMW(R,DR,u,DAGGER,mass,SRF)
+      else
+        print *,"dwkernel not set to 1 or 2 - exit"
+        stop
       endif
 
       return

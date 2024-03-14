@@ -1,3 +1,4 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module dwcoeffs
       use pacc
       use options
@@ -8,181 +9,14 @@
       module domainwallmod
       use arraysizes
       use options
-      use basicdiracopsmod
-      use utilsmod
+      use WilsonDirac
       implicit none
-      logical,parameter :: VB_DW=.false.
+
       contains
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine DDW_Shamir(R,DR,u,DAGGER,mass)
-      use gammas
-      use ratfuncs
-      implicit none
-c     calculates DR = DDW*R where DDW is the domain wall formulation
-      complex(prc),intent(in) :: R(Nv,4,Ls)
-      complex(prc),intent(out) :: DR(Nv,4,Ls)
-      complex(prc),intent(in) :: u(Nv,3)
-      logical DAGGER
-      real(prc) mass
-      complex(prc) :: TR(Nv,4)
-      integer s
-      real(prc) as
-
-c     diagonal blocks
-c      do s=1,Ls
-c        call DWilson(R(:,:,s),DR(:,:,s),u,DAGGER,-MDW,cone)
-c      end do
-      as=one
-      do s=1,Ls
-        call DWilson(R(:,:,s),DR(:,:,s),u,DAGGER,-MDW,czero)
-      end do
-      DR=as*DR+R
-
-c     projection blocks, P_-.R  = R(:,3:4,s), P_+.R = R(:,1:2,s)
-      if (.not.DAGGER) then
-        do s=1,Ls-1
-          DR(:,3:4,s)=DR(:,3:4,s)-R(:,3:4,s+1) 
-          DR(:,1:2,s+1)=DR(:,1:2,s+1)-R(:,1:2,s)
-        end do
-      else
-        do s=1,Ls-1
-          DR(:,1:2,s)=DR(:,1:2,s)-R(:,1:2,s+1) 
-          DR(:,3:4,s+1)=DR(:,3:4,s+1)-R(:,3:4,s)
-        end do
-      end if
-
-c     mass terms
- 
-      if (MTYPE.eq.1) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)+mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)+mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)+mass*R(:,1:2,1)
-        end if
-      elseif (MTYPE.eq.4) then
-        if (.not.DAGGER) then
-          TR=zi*R(:,:,Ls)
-          call mGmu(TR,4)
-          DR(:,1:2,1)=DR(:,1:2,1)+mass*TR(:,1:2)
-          TR=zi*R(:,:,1)
-          call mGmu(TR,4)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+mass*TR(:,3:4)
-        else
-          TR=zi*R(:,:,Ls)
-          call mGmu(TR,4)
-          DR(:,3:4,1)=DR(:,3:4,1)-mass*TR(:,3:4)
-          TR=zi*R(:,:,1)
-          call mGmu(TR,4)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)-mass*TR(:,1:2)
-        endif
-      elseif (MTYPE.eq.2) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)+zi*mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)-zi*mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)+zi*mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)-zi*mass*R(:,1:2,1)
-        endif
-      elseif (MTYPE.eq.3) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)-zi*mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+zi*mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)-zi*mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)+zi*mass*R(:,1:2,1)
-        endif
-      endif
-
-      return
-      end subroutine DDW_Shamir
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine DDW_OShamir(R,DR,u,DAGGER,mass)
-      use gammas
-      use ratfuncs
-      use dwcoeffs
-      implicit none
-c     calculates DR = DDW*R where DDW is the domain wall formulation
-      complex(prc),intent(in) :: R(Nv,4,Ls)
-      complex(prc),intent(out) :: DR(Nv,4,Ls)
-      complex(prc),intent(in) :: u(Nv,3)
-      logical DAGGER
-      real(prc) mass
-      complex(prc) :: TR(Nv,4)
-      integer s
-      real(prc) as
-
-c     diagonal blocks
-      as=one
-      do s=1,Ls
-        call DWilson(R(:,:,s),DR(:,:,s),u,DAGGER,-MDW,czero)
-        DR(:,:,s)=omega(s)*DR(:,:,s)+R(:,:,s)
-      end do
-
-c     projection blocks, P_-.R  = R(:,3:4,s), P_+.R = R(:,1:2,s)
-      if (.not.DAGGER) then
-        do s=1,Ls-1
-          DR(:,3:4,s)=DR(:,3:4,s)-R(:,3:4,s+1) 
-          DR(:,1:2,s+1)=DR(:,1:2,s+1)-R(:,1:2,s)
-        end do
-      else
-        do s=1,Ls-1
-          DR(:,1:2,s)=DR(:,1:2,s)-R(:,1:2,s+1) 
-          DR(:,3:4,s+1)=DR(:,3:4,s+1)-R(:,3:4,s)
-        end do
-      end if
-
-c     mass terms
- 
-      if (MTYPE.eq.1) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)+mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)+mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)+mass*R(:,1:2,1)
-        end if
-      elseif (MTYPE.eq.4) then
-        if (.not.DAGGER) then
-          TR=zi*R(:,:,Ls)
-          call mGmu(TR,4)
-          DR(:,1:2,1)=DR(:,1:2,1)+mass*TR(:,1:2)
-          TR=zi*R(:,:,1)
-          call mGmu(TR,4)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+mass*TR(:,3:4)
-        else
-          TR=zi*R(:,:,Ls)
-          call mGmu(TR,4)
-          DR(:,3:4,1)=DR(:,3:4,1)-mass*TR(:,3:4)
-          TR=zi*R(:,:,1)
-          call mGmu(TR,4)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)-mass*TR(:,1:2)
-        endif
-      elseif (MTYPE.eq.2) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)+zi*mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)-zi*mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)+zi*mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)-zi*mass*R(:,1:2,1)
-        endif
-      elseif (MTYPE.eq.3) then
-        if (.not.DAGGER) then
-          DR(:,1:2,1)=DR(:,1:2,1)-zi*mass*R(:,1:2,Ls)
-          DR(:,3:4,Ls)=DR(:,3:4,Ls)+zi*mass*R(:,3:4,1)
-        else
-          DR(:,3:4,1)=DR(:,3:4,1)-zi*mass*R(:,3:4,Ls)
-          DR(:,1:2,Ls)=DR(:,1:2,Ls)+zi*mass*R(:,1:2,1)
-        endif
-      endif
-
-      return
-      end subroutine DDW_OShamir
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine DDW_Wilson(R,DR,u,DAGGER,mass)
       use gammas
-      use ratfuncs
+!      use ratfuncs
       implicit none
 c     calculates DR = DDW*R where DDW is the domain wall formulation
 c     with Wilson kernel
@@ -197,7 +31,8 @@ c     with Wilson kernel
 
 c     diagonal blocks
       do s=1,Ls
-        call DWilson(R(:,:,s),DR(:,:,s),u,DAGGER,-MDW,cone)
+        call DWilson(R(:,:,s),DR(:,:,s),u,DAGGER,-MDW)
+        DR(:,:,s)=DR(:,:,s)+R(:,:,s)
       end do
 
       gi=4 ! use gamma3
@@ -205,25 +40,29 @@ c     diagonal blocks
 c     upper diagonal blocks
         do s=1,Ls-1
           call Pminus(R(:,:,s+1),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
           DR(:,:,s)=DR(:,:,s)+TR2
         end do
 c     lower diagonal blocks
         do s=1,Ls-1
           call Pplus(R(:,:,s),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
           DR(:,:,s+1)=DR(:,:,s+1)+TR2
         end do
       elseif (DAGGER) then
 c     upper diagonal blocks
         do s=1,Ls-1
-          call DWilson(R(:,:,s+1),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,s+1),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,s+1)
           call Pplus(TR,TR2,gi)
           DR(:,:,s)=DR(:,:,s)+TR2
         end do
 c     lower diagonal blocks
         do s=1,Ls-1
-          call DWilson(R(:,:,s),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,s),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,s)
           call Pminus(TR,TR2,gi)
           DR(:,:,s+1)=DR(:,:,s+1)+TR2
         end do
@@ -234,18 +73,22 @@ c     mass terms
 
         if (.not.DAGGER) then
           call Pminus(R(:,:,1),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
         elseif (DAGGER) then
-          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,1)
           call Pplus(TR,TR2,gi)
         endif
         DR(:,:,Ls)=DR(:,:,Ls)-mass*TR2
 
         if (.not.DAGGER) then
           call Pplus(R(:,:,Ls),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
         elseif (DAGGER) then
-          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,Ls)
           call Pminus(TR,TR2,gi)
         endif
         DR(:,:,1)=DR(:,:,1)-mass*TR2
@@ -256,10 +99,12 @@ c     mass terms
           zkappa=cmplx(0,-mass)
           call Pminus(R(:,:,1),TR,gi)
           call mGmu(TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
         elseif (DAGGER) then
           zkappa=cmplx(0,mass)
-          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,1)
           call mGmu(TR,gi)
           call Pplus(TR,TR2,gi)
         endif
@@ -269,10 +114,12 @@ c     mass terms
           zkappa=cmplx(0,-mass)
           call Pplus(R(:,:,Ls),TR,gi)
           call mGmu(TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,-cone)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
+          TR2=TR2-TR
         elseif(DAGGER) then
           zkappa=cmplx(0,mass)
-          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW,-cone)
+          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW)
+          TR=TR-R(:,:,Ls)
           call mGmu(TR,gi)
           call Pminus(TR,TR2,gi)
         endif
@@ -284,8 +131,7 @@ c     mass terms
       end subroutine DDW_Wilson
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine DDW_OWilson(R,DR,u,DAGGER,mass)
-      use gammas
-      use ratfuncs
+!      use gammas
       use dwcoeffs
       implicit none
       complex(prc),intent(in) :: R(Nv,4,Ls)
@@ -299,7 +145,7 @@ c     mass terms
 
 c     diagonal blocks
       do s=1,Ls
-        call DWilson(R(:,:,s),TR,u,DAGGER,-MDW,czero)
+        call DWilson(R(:,:,s),TR,u,DAGGER,-MDW)
         DR(:,:,s)=omega(s)*TR+R(:,:,s)
       end do
 
@@ -308,29 +154,27 @@ c     diagonal blocks
 c     upper diagonal blocks
         do s=1,Ls-1
           call Pminus(R(:,:,s+1),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           DR(:,:,s)=DR(:,:,s)+omega(s)*TR2-TR
         end do
 c     lower diagonal blocks
         do s=1,Ls-1
           call Pplus(R(:,:,s),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           DR(:,:,s+1)=DR(:,:,s+1)+omega(s+1)*TR2-TR
         end do
       elseif (DAGGER) then
 c     upper diagonal blocks
         do s=1,Ls-1
-          call DWilson(R(:,:,s+1),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,s+1),TR,u,DAGGER,-MDW)
           TR2=omega(s+1)*TR-R(:,:,s+1)
-c          TR2=omega(s)*TR-R(:,:,s+1)
           call Pplus(TR2,TR3,gi)
           DR(:,:,s)=DR(:,:,s)+TR3
         end do
 c     lower diagonal blocks
         do s=1,Ls-1
-          call DWilson(R(:,:,s),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,s),TR,u,DAGGER,-MDW)
           TR2=omega(s)*TR-R(:,:,s)
-c          TR2=omega(s+1)*TR-R(:,:,s)
           call Pminus(TR2,TR3,gi)
           DR(:,:,s+1)=DR(:,:,s+1)+TR3
         end do
@@ -341,10 +185,10 @@ c     mass terms
 
         if (.not.DAGGER) then
           call Pminus(R(:,:,1),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           TR3=omega(Ls)*TR2-TR
         elseif (DAGGER) then
-          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW)
           TR2=omega(1)*TR-R(:,:,1)
           call Pplus(TR2,TR3,gi)
         endif
@@ -352,10 +196,10 @@ c     mass terms
 
         if (.not.DAGGER) then
           call Pplus(R(:,:,Ls),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           TR3=omega(1)*TR2-TR
         elseif (DAGGER) then
-          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW)
           TR2=omega(Ls)*TR-R(:,:,Ls)
           call Pminus(TR2,TR3,gi)
         endif
@@ -366,11 +210,11 @@ c     mass terms
         if (.not.DAGGER) then
           zkappa=cmplx(0,-mass)
           call Pminus(R(:,:,1),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           TR3=omega(Ls)*TR2-TR
         elseif (DAGGER) then
           zkappa=cmplx(0,-mass)
-          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,1),TR,u,DAGGER,-MDW)
           TR2=omega(1)*TR-R(:,:,1)
           call Pplus(TR2,TR3,gi)
         endif
@@ -379,11 +223,11 @@ c     mass terms
         if (.not.DAGGER) then
           zkappa=cmplx(0,mass)
           call Pplus(R(:,:,Ls),TR,gi)
-          call DWilson(TR,TR2,u,DAGGER,-MDW,czero)
+          call DWilson(TR,TR2,u,DAGGER,-MDW)
           TR3=omega(1)*TR2-TR
         elseif(DAGGER) then
           zkappa=cmplx(0,mass)
-          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW,czero)
+          call DWilson(R(:,:,Ls),TR,u,DAGGER,-MDW)
           TR2=omega(Ls)*TR-R(:,:,Ls)
           call Pminus(TR2,TR3,gi)
         endif
@@ -403,14 +247,10 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       logical DAGGER
       real(prc) mass
 
-      if (DWkernel.eq.1) then
-        call DDW_Shamir(R,DR,u,DAGGER,mass)
-      elseif (DWkernel.eq.2) then
+      if (DWkernel.eq.2) then
         call DDW_Wilson(R,DR,u,DAGGER,mass)
       elseif (DWkernel.eq.3) then
         call DDW_OWilson(R,DR,u,DAGGER,mass)
-      elseif (DWkernel.eq.4) then
-        call DDW_OShamir(R,DR,u,DAGGER,mass)
       else
         print *,"DWkernel not set properly"
         stop
@@ -430,14 +270,10 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       complex(prc) TMP(Nv,4,Ls)
       procedure(),pointer :: Dptr=>NULL()
 
-      if (DWkernel.eq.1) then
-        Dptr => DDW_Shamir
-      elseif (DWkernel.eq.2) then
+      if (DWkernel.eq.2) then
         Dptr => DDW_Wilson
       elseif (DWkernel.eq.3) then
         Dptr => DDW_OWilson
-      elseif (DWkernel.eq.4) then
-        Dptr => DDW_OShamir
       else
         print *, "Domain Wall kernel not set properly"
         stop
@@ -454,65 +290,17 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       return
       end subroutine IDDW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-c      subroutine IMdagM_DW(RR,DR,u,DAGGER,mass)
-!     solve MdagM.DR = RR for M=DDW
-c      implicit none
-c      integer,parameter :: kferm = 4*Nv*Ls
-c      integer,parameter :: niterc=Nv*Ls
-c      complex(prc) RR(kferm), DR(kferm)
-c      complex(prc) u(Nv,3)
-c      logical DAGGER
-c      real(prc) mass
-
-c      complex(prc) x1(kferm),x2(kferm),p(kferm),r(kferm)
-c      integer itercg
-c      integer nx,i
-c      real(prc) beta,betan,betad,alpha,alphad,alphan
-
-c      itercg=0
-
-c     initialise
-c      DR=RR
-c      call DDW_Shamir(RR,x1,u,.false.,mass)
-c      call DDW_Shamir(x1,x2,u,.true.,mass)
-c      r=RR-x2
-c      p=r
-c      betan=sum(conjg(r)*r)
-c      if (betan.lt.resid) goto 8
-c      
-c      do i=1,niterc
-c        itercg=itercg+1
-c        call DDW_Shamir(p,x1,u,.false.,mass)
-c        call DDW_Shamir(x1,x2,u,.true.,mass)
-c        alphan=sum(conjg(r)*r)
-c        alphad=sum(conjg(p)*x2)
-c        alpha=alphan/alphad
-c
-c        DR=DR+alpha*p
-c        r=r-alpha*x2
-c        betan=sum(conjg(r)*r)
-c        if (betan.lt.resid) goto 8
-c        beta=betan/alphan
-c        p=r+beta*p
-c      end do
-c
-c8     continue
-c      print *,itercg,niterc,betan
-c      return
-c      end subroutine IMdagM_DW    
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine IMdagM_DWkernel(RR,DR,u,DAGGER,mass,Dptr)
 !     solve MdagM.DR = RR for M=DDW
       use countmod
       implicit none
       integer,parameter :: kferm = 4*Nv*Ls
-      integer,parameter :: niterc=Nv*Ls*10
+      integer,parameter :: niterc=Nv*Ls
       complex(prc) RR(kferm), DR(kferm)
       complex(prc) u(Nv,3)
       logical DAGGER
       real(prc) mass
       procedure(),pointer :: Dptr
-      logical,parameter :: VB_IMDM=.false.
 
       complex(prc) x1(kferm),x2(kferm),p(kferm),r(kferm)
       integer itercg
@@ -541,7 +329,6 @@ c     initialise
         DR=DR+alpha*p
         r=r-alpha*x2
         betan=sum(conjg(r)*r)
-        if (VB_IMDM) then ; print *,betan,resid ; end if
         if (betan.lt.resid) goto 8
         beta=betan/alphan
         p=r+beta*p
@@ -565,8 +352,7 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       logical DAGGER
       complex(prc) :: TMP1(Nv,4,Ls),TMP2(Nv,4,Ls)
 
-      call DDW_Shamir(R,TMP1,u,.false.,baremass)
-!      call DDW(R,TMP1,u,.false.,baremass)
+      call DDW_Wilson(R,TMP1,u,.false.,baremass)
       DR(:,1:2)=TMP1(:,1:2,Ls)
       DR(:,3:4)=TMP1(:,3:4,Ls)
 
@@ -675,18 +461,12 @@ c     calculates DR = Pdag.IDDW(1).DDW(m).P.R where P is the permutation matrix
       procedure(),pointer :: Dptr => NULL()
       integer MTMP
 
-      if (DWkernel.eq.1) then
-        Dptr=>DDW_Shamir
-        print *,"KDDW with Shamir"
-      elseif (DWkernel.eq.2) then
+      if (DWkernel.eq.2) then
         Dptr=>DDW_Wilson
         print *,"KDDW with Wilson"
-      elseif (DWkernel.eq.3) then
+      elseif (DWkernel.eq.2) then
         Dptr=>DDW_OWilson
         print *,"KDDW with OWilson"
-      elseif (DWkernel.eq.4) then
-        Dptr=>DDW_OShamir
-        print *,"KDDW with OShamir"
       else
         print *,"DW kernel not set properly"
         stop
@@ -726,22 +506,13 @@ c     calculates DR = Pdag.IDDW(m).DDW(1).P.R where P is the permutation matrix
       procedure(),pointer :: Dptr => NULL()
       integer gi
       integer MTMP
-      integer j,d,l
 
-      if(VB_DW)then ; print *,"IKDDW" ; endif
-
-      if (DWkernel.eq.1) then
-        Dptr=>DDW_Shamir
-        if (VB_DW) print *,"IKDDW with Shamir"
-      elseif (DWkernel.eq.2) then
+      if (DWkernel.eq.2) then
         Dptr=>DDW_Wilson
-        if (VB_DW) print *,"IKDDW with Wilson"
+        print *,"KDDW with Wilson"
       elseif (DWkernel.eq.3) then
         Dptr=>DDW_OWilson
-        if (VB_DW) print *,"IKDDW with OWilson"
-      elseif (DWkernel.eq.4) then
-        Dptr=>DDW_OShamir
-        if (VB_DW) print *,"IKDDW with OShamir"
+        print *,"KDDW with OWilson"
       else
         print *,"DW kernel not set properly"
         stop
@@ -806,42 +577,5 @@ c     calculates DR = Pdag.IDDW(m).DDW(1).P.R where P is the permutation matrix
       
       return
       end subroutine IKDDW4
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-c      subroutine calcKDWDeterminant(u,DAGGER,mass)
-c      use options
-c      implicit none
-c      complex(prc),intent(in) :: u(Nv,3)
-c      logical DAGGER
-c      real(prc) mass
-c      complex(prc) :: R(4*Nv)
-c      complex(prc) :: COL(4*Nv)
-c      integer i,Nv4
-c      integer ipiv(4*Nv),err
-c      complex(prc) :: DenseOL(4*Nv,4*Nv)
-c      complex(prc) DdD(4*Nv,4*Nv),det
-c
-c      DenseOL=czero
-c      Nv4=4*Nv
-c      do i=1,Nv4
-c        R=czero
-c        R(i)=cone
-c        call KDDW4(R,COL,u,DAGGER,mass)
-c        DenseOL(1:Nv4,i)=COL(1:Nv4)
-c      end do
-c      print *,DenseOL
-c      DdD=matmul(DenseOL,conjg(transpose(DenseOL)))
-c      print *,"calc K determinant"
-c      call  cgetrf(Nv4,Nv4,DdD,Nv4,ipiv,err)
-c      print *,"err",err
-c
-c      det=1
-c      do i=1,Nv4
-c        det=det*DdD(i,i)
-c        print *,DdD(i,i)
-c      end do
-c      print *,"det K",det
-c
-c      return
-c      end subroutine calcKDWDeterminant
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module domainwallmod

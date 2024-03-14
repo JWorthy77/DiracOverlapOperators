@@ -16,9 +16,9 @@
       print *,"TEST DOMAIN WALL ROUTINES"
       print *,""
 !      call testDomainWallHT()
-!      call testDomainWallZolo()
+      call testDomainWallZolo()
 !      call testDomainWallWilson()
-      call testDomainWallShamir()
+!      call testDomainWallShamir()
       return
       end subroutine testDomainWall
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -145,11 +145,12 @@ cc      print *,SA,SB,SA-SB
       call setRVs(Nv*4*Ls,R5)
       call setRVs(Nv*4,R4)
 !     set roots for domain wall coefficients
-      call setZolo(1d-1,2d0,20,zolo)
+      call setZolo(1d-1,2d0,Ls,zolo)
       call getRoots(zolo)
       omega=zolo%roots
+      print *,"omega:",omega
 !     set coefficients for direct evaluation
-      call setZoloCoeffs(20,zolorf,1d-1,2d0)
+      call setZoloCoeffs(2*Ls,zolorf,1d-1,2d0)
 
       
 
@@ -223,7 +224,15 @@ c      print *,"TEST dag equiv M1:",maxval(abs(DR1-DR2))
       print *,"TEST dag equiv M3/M5:",maxval(abs(DR1-DR2))
 
 
+      dwkernel=3
+      call KDDW4(R4,DR1,u,.false.,one/10)
+      call IKDDW4(DR1,DR2,u,.false.,one/10)
+      print *,"TEST Zolo KDDW4.IKDDW4:",maxval(abs(R4-DR2))
 
+      dwkernel=2
+      call KDDW4(R4,DR1,u,.false.,one/10)
+      call IKDDW4(DR1,DR2,u,.false.,one/10)
+      print *,"TEST HT KDDW4.IKDDW4:",maxval(abs(R4-DR2))
 
 
       return

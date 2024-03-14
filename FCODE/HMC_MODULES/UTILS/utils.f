@@ -91,39 +91,4 @@
       return
       end function intbin
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine PRINT_ARRAY(A,Nv)
-      implicit none
-      integer Nv
-      complex(prc) :: A(Nv,4)
-      integer d,j
-
-      print *,"A:"
-      do d=1,4
-        print *,"d:",d
-        do j=1,Nv
-          print *,A(j,d)
-        end do
-      end do
-      return
-      end subroutine PRINT_ARRAY
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine PRINT_ARRAY5(A,Nv,Ls)
-      implicit none
-      integer Nv,Ls
-      complex(prc) :: A(Nv,4,Ls)
-      integer l,d,j
-
-      print *,"A5:"
-      do l=1,Ls
-        print *,"Ls:",l
-        do d=1,4
-          print *,"d:",d
-          do j=1,Nv
-            print *,A(j,d,l)
-          end do
-        end do
-      end do
-      return
-      end subroutine PRINT_ARRAY5
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module utilsmod

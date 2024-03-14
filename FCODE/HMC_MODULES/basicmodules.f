@@ -1,33 +1,8 @@
 !!!#define TWODIMENSIONS
-!!!#define STAGGERRED
-!!!#define USEARPACK
 
 ! declare usage of Intel Fortran
 !#define IFORTRAN
 
-#define PARALLEL
-#ifdef PARALLEL
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      module basicparallelmod
-      implicit none
-      integer rank,nprocs
-      contains
-      subroutine getMPIinfo()
-      use mpi
-      implicit none
-      integer ierr
- 
-      call MPI_COMM_RANK(MPI_COMM_WORLD,rank,ierr)
-      call MPI_COMM_SIZE(MPI_COMM_WORLD,nprocs,ierr)
-c      call MPI_BARRIER(MPI_COMM_WORLD)
-      print *,'MPI rank:',rank,'of',nprocs,'processors',ierr
-
-      return
-      end subroutine getMPIinfo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      end module basicparallelmod
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module pacc
       implicit none
@@ -54,11 +29,7 @@ c      real(prc),parameter :: resid=1q-20
       integer,parameter :: NDT = 3 ! no total dimensions
 #endif
       integer,parameter :: Nv = Ns**NDS*Nt
-#ifdef STAGGERED
-      integer,parameter :: Ndc = 1 ! no dirac components (1 for staggered, 2 for 2-comp, 4 for 4-comp)
-#else
       integer,parameter :: Ndc = 4 ! no dirac components (1 for staggered, 2 for 2-comp, 4 for 4-comp)
-#endif
       end module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module numbers
@@ -94,7 +65,7 @@ c      real(prc),parameter :: resid=1q-20
       logical,parameter :: QUENCHED=.false. ! muddled
 
 !     dirac options
-      integer,parameter :: Nferms=12 ! redundant
+      integer,parameter :: Nferms=2 
       integer DWkernel ! 1 for Shamir, 2 for Wilson, Mobius implementation incomplete
       integer MTYPE ! 1,2,3,4 - 2 is alt form of 3 (5 not implemented)
       integer OLTYPE ! 1,2 - 1 is direct calculation, 2 is domain wall calculation (K-type)
@@ -106,7 +77,7 @@ c      real(prc),parameter :: resid=1q-20
       integer,parameter :: Npf=8 ! no of terms for partial fraction DOL formulation, redundant
 !      integer,parameter :: Ls=2*Npf+1 ! for partial fraction reconstruction
 #ifndef LSVALUE
-#define LSVALUE 6
+#define LSVALUE 10
 #endif
       integer,parameter :: Ls=LSVALUE ! for domain wall construction
 !      integer :: Ls ! for domain wall construction
@@ -136,7 +107,6 @@ c      integer,parameter :: Nnoise=20 ! number of loops for noisy estimator
       end module options
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module countmod
-c      use pacc
       implicit none
 
       logical COUNT_IS_STARTED
@@ -145,6 +115,26 @@ c      use pacc
       integer inner_count
 
       end module countmod
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      module timer
+      implicit none
+      character(len=10) :: sdate,stime,szone,edate
+      integer,dimension(8) :: svals,evals
+      real tstart,tend ! cpu seconds
+
+      contains
+
+      subroutine init_timer()
+      implicit none
+
+      call date_and_time(sdate,stime,szone,svals)
+      print *,"Date:",sdate,"time:",stime
+      call cpu_time(tstart)
+      return 
+      end subroutine init_timer
+   
+
+      end module timer
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module paulimodule
       use pacc

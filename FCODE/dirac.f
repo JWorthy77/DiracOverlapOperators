@@ -130,6 +130,8 @@ c      call printOptions()
 !!      call testGammaHermiticity()
 !      call testOperatorConvergence()
 !      call testOperatorEquivalence()
+      call outputKDDW4()
+!      call equivDOL_DDW()
 !      call testOperators()
 !      call testFields()
 !      call testCondensate()
@@ -163,8 +165,8 @@ c      call printOptions()
 
 #ifdef PARALLEL
 
-      ntasks=0 ! ntasks calculated from input
-      call parallelSequence(ntasks,2) ! taskid 2: condensate
+!      ntasks=0 ! ntasks calculated from input
+!      call parallelSequence(ntasks,2) ! taskid 2: condensate
 !      ntasks=0 ! ntasks calculated from input
 !      call parallelSequence(ntasks,3) ! taskid 3: condensate slightly differently organised
 !      ntasks=0 ! ntasks calculated from input
