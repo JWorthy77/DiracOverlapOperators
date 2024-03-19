@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      module hmc2wilsonferms
+      module hmc2domwallferms
       use pacc
       use arraysizes
       use numbers
@@ -7,19 +7,18 @@
       use rvmodule
       use options
       implicit none
-      logical,parameter :: VB_H2=.true.
+      logical,parameter :: VB_DWF=.true.
       contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine march2DW(dH,thetat)
-      ! march dAdt=P       (theta is A)
-      !       dPdt=-dSdA
-      use gaugefield
+      subroutine march2DomWallFerms(dH,thetat) ! march dAdt=P (theta is A)
+      use gaugefield                           !       dPdt=-dSdA
+      use hmc2wilsonferms
       implicit none
       real(prc),intent(out) :: dH
       real(prc),intent(inout) :: thetat(Nv,3)
       real(prc) F(Nv,3)
       real(prc) pp(Nv,3)
-      complex(prc) ps(Nv,4),ut(Nv,3)
+      complex(prc) ps(Nv,4,Ls),ut(Nv,3,Ls)
       real(prc) etime,proby,ytest,avsteps,dt,h0,h1
       integer mu,ts,tsmax
 
@@ -31,17 +30,17 @@
 
       call coef(ut,thetat)
       call setGRVs(3*Nv,pp)  ! randomise starting momentum
-      call setCGRVs(4*Nv,ps) ! randomise pseudo-fermion field
+      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
 
-      h0=ham2DW(thetat,ut,pp,ps)
-      if (VB_H2) then ; print *,"h0:",h0 ; end if
-      call force2DW(thetat,ut,ps,F)
+      h0=ham2DomWallFerms(thetat,ut,pp,ps) ! initial hamiltonian energy
+      if (VB_DWF) then ; print *,"h0:",h0 ; end if
+      call force2DomWallFerms(thetat,ut,ps,F)
       pp=pp-dt*half*F ! half time step before leap frog
       proby=1.0/avsteps
-      do ts=1,tsmax ! time march
+      do ts=1,tsmax  ! time march
         thetat=thetat+dt*pp
-        call coef(ut,thetat)
-        call force2DW(thetat,ut,ps,F)
+!        call coef(ut,thetat)
+        call force2DomWallFerms(thetat,ut,ps,F)
         ytest=urv()
         if (ytest.lt.proby) then
           print *,"ts:",ts
@@ -51,18 +50,20 @@
           pp=pp-dt*F
         endif
       end do
+      pp=pp+half*dt*F ! correction to half step if tsmax reached
 
 501   continue
-      h1=ham2DW(thetat,ut,pp,ps)
+      h1=ham2DomWallFerms(thetat,ut,pp,ps) ! final hamiltonian energy
+      if (VB_DWF) then ; print *,"h1:",h1 ; end if
       dH=h0-h1
       return
-      end subroutine march2DW
+      end subroutine march2DomWallFerms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine force2DW(thetat,ut,ps,F)
+      subroutine force2DomWallFerms(thetat,ut,ps,F)
       implicit none
       real(prc),intent(in) :: thetat(Nv,3)
       complex(prc),intent(in) :: ut(Nv,3)
-      complex(prc),intent(in) :: ps(Nv,4)
+      complex(prc),intent(in) :: ps(Nv,4,Ls)
       real(prc),intent(out) :: F(Nv,3)
       real(prc) :: dSdA(Nv,3)
 
@@ -70,7 +71,7 @@
       call fermionforce(ut,ps,dSdA) 
       F=F+half*dSdA
       return
-      end subroutine force2DW
+      end subroutine force2DomWallFerms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine forceThirring3(thetat,dSdA)
       implicit none
@@ -86,40 +87,35 @@
       use WilsonDirac
       implicit none
       complex(prc),intent(in) :: ut(Nv,3)
-      complex(prc),intent(in) :: ps(Nv,4)
+      complex(prc),intent(in) :: ps(Nv,4,Ls)
       real(prc),intent(out) :: dSdA(Nv,3)
       complex(prc),dimension(Nv,4) :: eta,nu
       
-!      print *,"ps:",ps
-!      call DdagD(ps,nu,ut,.false.,baremass)
       call IDdagD(ps,nu,ut,.false.,baremass)
-!      print *,"nu:",nu
       call DWilson(nu,eta,ut,.false.,baremass)
-!      print *,"eta:",eta
       call WilsonDerivs(dSdA,eta,nu,.false.)
-!      print *,"dSdA:",dSdA
 
       return
       end subroutine fermionforce
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real(prc) function ham2DW(thetat,ut,pp,ps)
+      real(prc) function ham2DomWallFerms(thetat,ut,pp,ps)
       implicit none
       real(prc),dimension(Nv,3),intent(in) :: thetat,pp
       complex(prc),dimension(Nv,3),intent(in) :: ut
-      complex(prc),dimension(Nv,4),intent(in) :: ps
+      complex(prc),dimension(Nv,4,Ls),intent(in) :: ps
       real(prc) hg,hp,hf
 
       hp=0.5*sum(pp*pp)
       hg=hamThirring(thetat)
-      hf=ham2WilsonFerms(ps,ut)
-      ham2DW=(hg+hp+hf)/Nv
-      if (VB_H2) print *,"hg:",hg/Nv
-      if (VB_H2) print *,"hp:",hp/Nv
-      if (VB_H2) print *,"hf:",hf/Nv
-      if (VB_H2) print *,"h:",ham2DW
+      hf=ham2Ferms(ps,ut)
+      ham2DomWallFerms=(hg+hp+hf)/Nv
+      if (VB_DWF) print *,"hg:",hg/Nv
+      if (VB_DWF) print *,"hp:",hp/Nv
+      if (VB_DWF) print *,"hf:",hf/Nv
+      if (VB_DWF) print *,"h:",ham2DomWallFerms
       write(101,*) hg/Nv,hp/Nv,hf/Nv
       return
-      end              
+      end function ham2DomWallFerms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       real(prc) function hamThirring(thetat)
       implicit none
@@ -130,18 +126,21 @@
       return
       end function hamThirring
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real(prc) function ham2WilsonFerms(ps,ut)
-      use WilsonDirac
+      real(prc) function ham2Ferms(ps,ut)
+      use domainwallmod
       implicit none
-      complex(prc),intent(in) :: ps(Nv*4)
+      complex(prc),intent(in) :: ps(Nv*4*Ls)
       complex(prc),intent(in) :: ut(Nv*3)
-      complex(prc) tmp(Nv*4)
+      complex(prc) tmp(Nv*4*Ls)
+      procedure(),pointer :: Dptr=>NULL()
 
-      print *,'energy 2 Wilson Fermions'
-      call IDdagD(ps,tmp,ut,.false.,baremass)
-      ham2WilsonFerms=half*dot_product(ps,tmp)
+      Dptr => DDW_OWilson
+      Dptr => DDW_Wilson
+      if (VB_DWF) print *,'energy 2 DomWall Fermions'
+      call IMdagM_DWkernel(ps,tmp,ut,.false.,baremass,Dptr)
+      ham2Ferms=half*dot_product(ps,tmp)
 
       return
-      end function ham2WilsonFerms
+      end function ham2Ferms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      end module hmc2wilsonferms
+      end module hmc2domwallferms

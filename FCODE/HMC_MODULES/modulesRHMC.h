@@ -16,7 +16,7 @@
 #include "DIRAC_OPS/overlap.f"
 #include "AUXFIELD/gaugefield.f"
 #include "AUXFIELD/hmc2wilsonferms.f"
-!#include "AUXFIELD/hmc2domwallferms.f"
+#include "AUXFIELD/hmc2domwallferms.f"
 !#include "gaugefieldSU3.f"
 #include "AUXFIELD/gaugemodule.f"
 !#include "diracmontecarlo.f"

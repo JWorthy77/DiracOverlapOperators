@@ -19,8 +19,8 @@ c      real(prc),parameter :: resid=1q-20
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module arraysizes
       implicit none
-      integer,parameter :: Ns = 6
-      integer,parameter :: Nt = 6
+      integer,parameter :: Ns = 4
+      integer,parameter :: Nt = 4
 #ifdef TWODIMENSIONS
       integer,parameter :: NDS = 1 ! no spatial dimensions
       integer,parameter :: NDT = 2 ! no total dimensions

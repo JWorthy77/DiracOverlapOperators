@@ -214,7 +214,6 @@ c     initialise
       use indices
       implicit none
       real(prc),intent(out) :: dSdA(Nv,3)
-!      complex(prc),intent(in) :: u(Nv,3)
       complex(prc),dimension(Nv,4),intent(in) ::  eta,nu
       logical :: DAG
       complex(prc),dimension(4) :: lhs,rhs1,rhs2
@@ -232,12 +231,12 @@ c     initialise
           lhs=eta(i,:)
           rhs1=pm1*zi*half*nu(iu(i,mu),:)
           call mGmu4(rhs1,mu)
-          rhs2=   -zi*half*nu(iu(i,mu),:)
+          rhs2=  -zi*half*nu(iu(i,mu),:)
           dSdA(i,mu)=dot_product(lhs,rhs1+rhs2)
           lhs=eta(iu(i,mu),:)
           rhs1=pm1*zi*half*nu(i,:)
           call mGmu4(rhs1,mu)
-          rhs2=   -zi*half*nu(i,:)
+          rhs2=  zi*half*nu(i,:)
           dSdA(i,mu)=dSdA(i,mu)+dot_product(lhs,rhs1+rhs2)
         end do
       end do

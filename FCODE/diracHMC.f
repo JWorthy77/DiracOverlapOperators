@@ -11,7 +11,7 @@
       print *,"Start program Dirac"
       call init()
 
-      Naux=2
+      Naux=200
       do j=1,Naux
         call makeGaugeField(.false.)
 !        call measureCondensateInstance()
@@ -46,8 +46,8 @@
       MTYPE=3 ! mass term type
       DWkernel=2 ! 1 for Shamir, 2 for Wilson
       OLTYPE=1 ! 1 is direct calculation, 2 is for DW (K)-type
-      baremass=0.0d0
-      gbeta=0.8
+      baremass=0.01d0
+      gbeta=1.0
 
       call setGammas
       call setPauliMatrices
