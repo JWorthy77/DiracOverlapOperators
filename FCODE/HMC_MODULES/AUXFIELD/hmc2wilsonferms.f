@@ -40,7 +40,7 @@
       proby=1.0/avsteps
       do ts=1,tsmax ! time march
         thetat=thetat+dt*pp
-        call coef(ut,thetat)
+!        call coef(ut,thetat)
         call force2DW(thetat,ut,ps,F)
         ytest=urv()
         if (ytest.lt.proby) then
