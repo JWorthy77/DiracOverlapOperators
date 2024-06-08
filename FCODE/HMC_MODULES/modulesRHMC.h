@@ -12,6 +12,8 @@
 #include "UTILS/ratfuncs.f"
 #include "UTILS/utils.f"
 #include "DIRAC_OPS/WilsonDirac.f"
+#include "DIRAC_OPS/ShamirDomainWall.f"
+#include "DIRAC_OPS/WilsonDomainWall.f"
 #include "DIRAC_OPS/domainwall.f"
 #include "DIRAC_OPS/overlap.f"
 #include "AUXFIELD/gaugefield.f"

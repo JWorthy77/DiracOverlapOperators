@@ -19,18 +19,23 @@
       real(prc) F(Nv,3)
       real(prc) pp(Nv,3)
       complex(prc) ps(Nv,4,Ls),ut(Nv,3,Ls)
+      complex(prc) phi3(Nv,4)
       real(prc) etime,proby,ytest,avsteps,dt,h0,h1
-      integer mu,ts,tsmax
+      integer mu,ts,tsmax,l
 
-      etime=1.0
+      etime=0.5
       tsmax=100
-      dt=0.1
+      dt=0.05
       avsteps=etime/dt
       proby=one/avsteps
 
       call coef(ut,thetat)
       call setGRVs(3*Nv,pp)  ! randomise starting momentum
-      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
+!      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
+      call setCGRVs(4*Nv,phi3) ! randomise pseudo-fermion field
+      do l=1,Ls
+        ps(:,:,l)=phi3
+      end do
 
       h0=ham2DomWallFerms(thetat,ut,pp,ps) ! initial hamiltonian energy
       if (VB_DWF) then ; print *,"h0:",h0 ; end if
@@ -82,21 +87,113 @@
       return
       end subroutine forceThirring3
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fermionforce(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      subroutine fermionforce(ut,ps,dSdA) ! for Seff=1/2phi ...  phi
       use gammas
       use WilsonDirac
+      use domainwallmod
       implicit none
       complex(prc),intent(in) :: ut(Nv,3)
       complex(prc),intent(in) :: ps(Nv,4,Ls)
       real(prc),intent(out) :: dSdA(Nv,3)
-      complex(prc),dimension(Nv,4) :: eta,nu
-      
-      call IDdagD(ps,nu,ut,.false.,baremass)
-      call DWilson(nu,eta,ut,.false.,baremass)
-      call WilsonDerivs(dSdA,eta,nu,.false.)
+      real(prc) :: dTmpdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls) :: eta,nu,chi
+      complex(prc),dimension(Nv,4,Ls) :: TMP
+      integer :: KTYPE
+      procedure(),pointer :: Dptr=>NULL()
+      integer baseMTYPE 
+     
+      if (VB_DWF) print *,"fermion force A"
+
+      baseMTYPE=MTYPE
+      call IMdagMDomWall(ps,chi,ut,baremass)
+      if (VB_DWF) print *,"fermion force A - step 1 done"
+      call MDomWall(chi,TMP,ut,.false.,baremass)
+      if (VB_DWF) print *,"fermion force A - step 2 done"
+
+      MTYPE=1
+      call IDDW(TMP,eta,ut,.true.,one)
+      if (VB_DWF) print *,"fermion force A - step 3 done"
+      MTYPE=baseMTYPE
+
+      call MDomWall(chi,nu,ut,.false.,baremass)
+      call DomainWallDerivs(dSdA,eta,nu,.false.,KTYPE)
+
+      eta=chi
+      call DomainWallDerivs(dTmpdA,eta,nu,.false.,KTYPE)
+      dSdA=dSdA+dTmpdA
+
+      if (VB_DWF) print *,"fermion force A done"
 
       return
       end subroutine fermionforce
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine fermionforceB(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      use gammas
+      use WilsonDirac
+      use domainwallmod
+      implicit none
+      complex(prc),intent(in) :: ut(Nv,3)
+      complex(prc),intent(in) :: ps(Nv,4,Ls)
+      real(prc),intent(out) :: dSdA(Nv,3)
+      real(prc) :: dTmpdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls) :: eta,nu,chi
+      complex(prc),dimension(Nv,4,Ls) :: TMP
+      integer :: KTYPE
+      procedure(),pointer :: Dptr=>NULL()
+      integer baseMTYPE 
+     
+      if (VB_DWF) print *,"fermion force A"
+
+      baseMTYPE=MTYPE
+      call IMdagMDomWall(ps,chi,ut,baremass)
+      if (VB_DWF) print *,"fermion force A - step 1 done"
+      call MDomWall(chi,TMP,ut,.false.,baremass)
+      if (VB_DWF) print *,"fermion force A - step 2 done"
+
+      MTYPE=1
+      call IDDW(TMP,eta,ut,.true.,one)
+      if (VB_DWF) print *,"fermion force A - step 3 done"
+      MTYPE=baseMTYPE
+
+      call MDomWall(chi,nu,ut,.false.,baremass)
+      call DomainWallDerivs(dSdA,eta,nu,.false.,KTYPE)
+
+      eta=chi
+      call DomainWallDerivs(dTmpdA,eta,nu,.false.,KTYPE)
+      dSdA=dSdA+dTmpdA
+
+      if (VB_DWF) print *,"fermion force A done"
+
+      return
+      end subroutine fermionforceB
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine fermionforceC(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      use gammas                           ! chi^dag dM^dagdA M chi
+      use WilsonDirac
+      use domainwallmod
+      implicit none
+      complex(prc),intent(in) :: ut(Nv,3)
+      complex(prc),intent(in) :: ps(Nv,4,Ls)
+      real(prc),intent(out) :: dSdA(Nv,3)
+      real(prc) :: dTmpdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls) :: eta,nu,chi
+      complex(prc),dimension(Nv,4,Ls) :: TMP
+      integer,parameter :: KTYPE=1 ! Wilson
+      procedure(),pointer :: Dptr=>NULL()
+      
+      call IMDomWall(ps,chi,ut,.false.,baremass)
+      call DDW(chi,TMP,ut,.false.,baremass)
+      Dptr => DDW_Wilson
+!      Dptr => DDW_OWilson
+      call IMdagM_DWkernel(TMP,nu,ut,baremass,Dptr)
+      eta=chi
+      call DomainWallDerivs(dSdA,eta,nu,.false.,KTYPE)
+      call MDomWall(chi,eta,ut,.false.,baremass)
+      call DomainWallDerivs(dTmpdA,eta,nu,.false.,KTYPE)
+      dSdA=dSdA+dTmpdA
+
+      return
+      end subroutine fermionforceC
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       real(prc) function ham2DomWallFerms(thetat,ut,pp,ps)
       implicit none
@@ -136,8 +233,9 @@
 
       Dptr => DDW_OWilson
       Dptr => DDW_Wilson
+      Dptr => MDomWall
       if (VB_DWF) print *,'energy 2 DomWall Fermions'
-      call IMdagM_DWkernel(ps,tmp,ut,.false.,baremass,Dptr)
+      call IMdagM_DWkernel(ps,tmp,ut,baremass,Dptr)
       ham2Ferms=half*dot_product(ps,tmp)
 
       return

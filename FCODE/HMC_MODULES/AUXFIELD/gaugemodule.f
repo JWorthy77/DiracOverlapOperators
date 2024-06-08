@@ -14,6 +14,7 @@
       subroutine makeGaugeField(GZERO)
       use gaugefield
       use hmc2wilsonferms
+      use hmc2domwallferms
       implicit none
 
       logical GZERO
@@ -33,10 +34,8 @@
       do isw=1,Nsw
         print *,"sweep:",isw," of ",Nsw
         thetat=theta
-        print *,"march:",isw," of ",Nsw
         call march2DW(dH,thetat)
 !        call march2DomWallFerms(dH,thetat)
-        print *,"accept:",isw," of ",Nsw
         call accept(dH,thetat)
       end do
       call coef(u,theta)
@@ -56,7 +55,7 @@
       y=exp(dH)
       x=urv()
       print *,"dH:",dH
-      print *,"accept if x:",x," < exp(-dH)=y:",y
+      print *,"accept if x:",x," < exp(dH)=y:",y
       if (x.lt.y) then
         print *,"ACCEPT"
         theta=thetat

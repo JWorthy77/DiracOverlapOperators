@@ -65,9 +65,16 @@
       complex(prc),intent(in) :: ps(Nv,4)
       real(prc),intent(out) :: F(Nv,3)
       real(prc) :: dSdA(Nv,3)
+      real(prc) :: dSdAComplex(Nv,3)
 
       call forceThirring3(thetat,F)
       call fermionforce(ut,ps,dSdA) 
+!      call spottest(ut,ps,dSdA) 
+      call fermionforceComplex(ut,ps,dSdAComplex) 
+
+!      print *,"cmplx:",maxval(abs(dSdA-real(dSdA)))
+      print *,"diff:",maxval(abs(dSdAComplex-dSdA))
+
       F=F+half*dSdA
       return
       end subroutine force2DW
@@ -82,25 +89,64 @@
       end subroutine forceThirring3
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine fermionforce(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
-      use gammas
-      use WilsonDirac
+      use gammas                          ! dSdA = Re [ X^dag.Dw^dag.dDwdA.X ]
+      use WilsonDirac                     ! X = (Dw^dag.Dw)^-1 phi
       implicit none
       complex(prc),intent(in) :: ut(Nv,3)
       complex(prc),intent(in) :: ps(Nv,4)
       real(prc),intent(out) :: dSdA(Nv,3)
       complex(prc),dimension(Nv,4) :: eta,nu
       
-!      print *,"ps:",ps
-!      call DdagD(ps,nu,ut,.false.,baremass)
       call IDdagD(ps,nu,ut,.false.,baremass)
-!      print *,"nu:",nu
       call DWilson(nu,eta,ut,.false.,baremass)
-!      print *,"eta:",eta
       call WilsonDerivs(dSdA,eta,nu,.false.)
-!      print *,"dSdA:",dSdA
 
       return
       end subroutine fermionforce
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine spottest(ut,ps,dSdA) !
+      use gammas                          
+      use WilsonDirac                    
+      implicit none
+      complex(prc),intent(in) :: ut(Nv,3)
+      complex(prc),intent(in) :: ps(Nv,4)
+      real(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4) :: eta,nu
+      
+      call DWilson(ps,eta,ut,.false.,baremass)
+      call DWilson(ps,nu,ut,.true.,baremass)
+      print *,"dwils:",maxval(abs(aimag(eta+nu)))
+      dSdA=0
+      return
+      end subroutine spottest
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine fermionforceComplex(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      use gammas                                 ! dSda = 1/2.X^dag.[dDw^dagdA.Dw + Dw^dag.dDwdA] X
+      use WilsonDirac                            ! X = (Dw^dag.Dw)^-1 phi
+      implicit none
+      complex(prc),intent(in) :: ut(Nv,3)
+      complex(prc),intent(in) :: ps(Nv,4)
+      real(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4) :: eta,nu
+      complex(prc),dimension(Nv,3) :: dSdA1,dSdA2
+      complex(prc),dimension(Nv,3) :: dSdA3
+      
+      call IDdagD(ps,nu,ut,.false.,baremass)
+      call DWilson(nu,eta,ut,.false.,baremass)
+      call WilsonDerivsComplex(dSdA1,eta,nu,.false.)
+!      print *,"dSdA1:",dSdA1
+      eta=nu
+      call DWilson(eta,nu,ut,.false.,baremass)
+      call WilsonDerivsComplex(dSdA2,eta,nu,.true.)
+!      print *,"dSdA2:",dSdA2
+      dSdA3=(dSdA1+dSdA2)/2.0
+      dSdA=dSdA3
+!      print *,"dSdA:",maxval(abs(aimag(dSdA3)))
+!      print *,"cmplx:",maxval(abs(dSdA3-real(dSdA3)))
+!      print *,"dSdA:",(dSdA1+dSdA2)/2.0
+
+      return
+      end subroutine fermionforceComplex
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       real(prc) function ham2DW(thetat,ut,pp,ps)
       implicit none

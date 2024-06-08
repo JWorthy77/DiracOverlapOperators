@@ -8,11 +8,12 @@
       implicit none
       integer j,Naux
 
-      print *,"Start program Dirac"
+      print *,"Start program Dirac HMC"
       call init()
 
-      Naux=200
+      Naux=50
       do j=1,Naux
+        print *,"make field ",j," of ",Naux
         call makeGaugeField(.false.)
 !        call measureCondensateInstance()
       end do

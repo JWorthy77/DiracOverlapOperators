@@ -18,6 +18,8 @@
 !      use ratfuncs
 !      use utilsmod
       use WilsonDirac
+      use ShamirDomWall
+      use WilsonDomWall
       use domainwallmod
       use overlap
       use IOmodule

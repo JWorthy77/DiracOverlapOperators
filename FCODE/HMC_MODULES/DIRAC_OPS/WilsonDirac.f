@@ -208,7 +208,7 @@ c     initialise
 !      return
 !      end subroutine IG5DW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine WilsonDerivs(dSdA,eta,nu,DAG)
+      subroutine WilsonDerivs(dSdA,eta,nu,DAG) ! dSdA = eta^dag.dDwdA.nu
       use numbers
       use gammas
       use indices
@@ -243,5 +243,41 @@ c     initialise
         
       return
       end subroutine WilsonDerivs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine WilsonDerivsComplex(dSdA,eta,nu,DAG)
+      use numbers
+      use gammas
+      use indices
+      implicit none
+      complex(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4),intent(in) ::  eta,nu
+      logical :: DAG
+      complex(prc),dimension(4) :: lhs,rhs1,rhs2
+      integer mu,idirac,i
+      integer pm1
+
+      pm1=one
+      if (DAG) then
+        pm1=-one
+      endif
+
+      dSdA=0
+      do mu=1,3
+        do i=1,Nv
+          lhs=eta(i,:)
+          rhs1=pm1*zi*half*nu(iu(i,mu),:)
+          call mGmu4(rhs1,mu)
+          rhs2=  -zi*half*nu(iu(i,mu),:)
+          dSdA(i,mu)=dot_product(lhs,rhs1+rhs2)
+          lhs=eta(iu(i,mu),:)
+          rhs1=pm1*zi*half*nu(i,:)
+          call mGmu4(rhs1,mu)
+          rhs2=  zi*half*nu(i,:)
+          dSdA(i,mu)=dSdA(i,mu)+dot_product(lhs,rhs1+rhs2)
+        end do
+      end do
+        
+      return
+      end subroutine WilsonDerivsComplex
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module WilsonDirac
