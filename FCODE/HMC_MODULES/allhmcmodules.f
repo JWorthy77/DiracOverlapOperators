@@ -21,6 +21,7 @@
       use ShamirDomWall
       use WilsonDomWall
       use domainwallmod
+      use condmod
       use overlap
       use IOmodule
       end module allhmcmodules

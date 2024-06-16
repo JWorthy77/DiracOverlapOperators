@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      module hmc2wilsonferms
+      module hmc2naiveferms
       use pacc
       use arraysizes
       use numbers
@@ -7,12 +7,10 @@
       use rvmodule
       use options
       implicit none
-      logical,parameter :: VB_H2=.true.
-!      real(prc) :: etime,dt
-!      integer tsmax
+      logical,parameter :: VB_HNF=.true.
       contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine march2DW(dH,thetat)
+      subroutine march2DNF(dH,thetat)
       ! march dAdt=P       (theta is A)
       !       dPdt=-dSdA
       use gaugefield
@@ -36,15 +34,15 @@
       call setGRVs(3*Nv,pp)  ! randomise starting momentum
       call setCGRVs(4*Nv,ps) ! randomise pseudo-fermion field
 
-      h0=ham2DW(thetat,ut,pp,ps)
-      if (VB_H2) then ; print *,"h0:",h0 ; end if
-      call force2DW(thetat,ut,ps,F)
+      h0=ham2DNF(thetat,ut,pp,ps)
+      if (VB_HNF) then ; print *,"h0:",h0 ; end if
+      call force2DNF(thetat,ut,ps,F)
       pp=pp-dt*half*F ! half time step before leap frog
       proby=1.0/avsteps
       do ts=1,tsmax ! time march
         thetat=thetat+dt*pp
         call coef(ut,thetat)
-        call force2DW(thetat,ut,ps,F)
+        call force2DNF(thetat,ut,ps,F)
         print *,"sumF:",sum(F)
         ytest=urv()
         if (ytest.lt.proby) then
@@ -57,12 +55,12 @@
       end do
 
 501   continue
-      h1=ham2DW(thetat,ut,pp,ps)
+      h1=ham2DNF(thetat,ut,pp,ps)
       dH=h0-h1
       return
-      end subroutine march2DW
+      end subroutine march2DNF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine force2DW(thetat,ut,ps,F)
+      subroutine force2DNF(thetat,ut,ps,F)
       implicit none
       real(prc),intent(in) :: thetat(Nv,3)
       complex(prc),intent(in) :: ut(Nv,3)
@@ -72,51 +70,43 @@
       real(prc) :: dSdAComplex(Nv,3)
 
       call forceThirring3(thetat,F)
-      return
-      call fermionforce(ut,ps,dSdA) 
-      if (.false.) then
-        call fermionforceComplex(ut,ps,dSdAComplex) 
-        print *,"diff:",maxval(abs(dSdAComplex-dSdA))
+      if(.not.QUENCHED)then
+        call fermionforceDNF(ut,ps,dSdAComplex) 
+        dSdA=dSdAComplex
+        F=F+dSdA
       endif
-
-!      F=F+half*dSdA
-      F=F+dSdA
       return
-      end subroutine force2DW
+      end subroutine force2DNF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine forceThirring3(thetat,dSdA)
+      subroutine forceThirring3(thetat,F)
       implicit none
-      real(prc) thetat(Nv,3),dSdA(Nv,3)
+      real(prc) thetat(Nv,3),F(Nv,3)
 
-      dSdA=Nferms*gbeta*thetat
+      F=Nferms*gbeta*thetat
 
       return
       end subroutine forceThirring3
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fermionforce(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      subroutine fermionforceReal(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
       use gammas                          ! dSdA = Re [ X^dag.Dw^dag.dDwdA.X ]
-      use WilsonDirac                     ! X = (Dw^dag.Dw)^-1 phi
+      use NaiveDirac                     ! X = (Dw^dag.Dw)^-1 phi
       implicit none
       complex(prc),intent(in) :: ut(Nv,3)
       complex(prc),intent(in) :: ps(Nv,4)
       real(prc),intent(out) :: dSdA(Nv,3)
-      complex(prc),dimension(Nv,4) :: eta,nu,etaT
+      complex(prc) :: dSdAC(Nv,3)
+      complex(prc),dimension(Nv,4) :: eta,nu
       
-      call IDdagD(ps,nu,ut,.false.,baremass)
-      call DWilson(nu,eta,ut,.false.,baremass)
-      if (.false.) then
-        print *,"test:"
-        call DWilsonJW(nu,etaT,ut,.false.,baremass)
-        print *,"diff:",maxval(abs(etaT-eta))
-      end if
-      call WilsonDerivs(dSdA,eta,nu,.false.)
-
+      call IDNFdagDNF(ps,nu,ut,.false.,baremass)
+      call DNF(nu,eta,ut,.false.,baremass)
+      call DNFDerivs(dSdAC,eta,nu,.false.)
+      dSdA=dSdAC
       return
-      end subroutine fermionforce
+      end subroutine fermionforceReal
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fermionforceComplex(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
+      subroutine fermionforceDNF(ut,ps,dSdA) ! for Seff=1/2phi^dag (Dw^dag.Dw)^-1 phi
       use gammas                                 ! dSda = 1/2.X^dag.[dDw^dagdA.Dw + Dw^dag.dDwdA] X
-      use WilsonDirac                            ! X = (Dw^dag.Dw)^-1 phi
+      use NaiveDirac                            ! X = (Dw^dag.Dw)^-1 phi
       implicit none
       complex(prc),intent(in) :: ut(Nv,3)
       complex(prc),intent(in) :: ps(Nv,4)
@@ -125,19 +115,19 @@
       complex(prc),dimension(Nv,3) :: dSdA1,dSdA2
       complex(prc),dimension(Nv,3) :: dSdA3
       
-      call IDdagD(ps,nu,ut,.false.,baremass)
-      call DWilson(nu,eta,ut,.false.,baremass)
-      call WilsonDerivsComplex(dSdA1,eta,nu,.false.)
+      call IDNFdagDNF(ps,nu,ut,.false.,baremass)
+      call DNF(nu,eta,ut,.false.,baremass)
+      call DNFDerivsSJH(dSdA1,eta,nu,.false.)
       eta=nu
-      call DWilson(eta,nu,ut,.false.,baremass)
-      call WilsonDerivsComplex(dSdA2,eta,nu,.true.)
+      call DNF(eta,nu,ut,.false.,baremass)
+      call DNFDerivsSJH(dSdA2,eta,nu,.true.)
       dSdA3=(dSdA1+dSdA2)/2.0
       dSdA=dSdA3
 
       return
-      end subroutine fermionforceComplex
+      end subroutine fermionforceDNF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real(prc) function ham2DW(thetat,ut,pp,ps)
+      real(prc) function ham2DNF(thetat,ut,pp,ps)
       implicit none
       real(prc),dimension(Nv,3),intent(in) :: thetat,pp
       complex(prc),dimension(Nv,3),intent(in) :: ut
@@ -146,15 +136,18 @@
 
       hp=0.5*sum(pp*pp)
       hg=hamThirring(thetat)
-      hf=ham2WilsonFerms(ps,ut)
-      ham2DW=(hg+hp+hf)/Nv
-      if (VB_H2) print *,"hg:",hg/Nv
-      if (VB_H2) print *,"hp:",hp/Nv
-      if (VB_H2) print *,"hf:",hf/Nv
-      if (VB_H2) print *,"h:",ham2DW
+      ham2DNF=(hg+hp)/Nv
+      if (VB_HNF) print *,"hg:",hg/Nv
+      if (VB_HNF) print *,"hp:",hp/Nv
+      if (.not.QUENCHED) then
+        hf=ham2NaiveFerms(ps,ut)
+        ham2DNF=ham2DNF+hf/Nv
+        if (VB_HNF) print *,"hf:",hf/Nv
+      endif
+      if (VB_HNF) print *,"h:",ham2DNF
       write(101,*) hg/Nv,hp/Nv,hf/Nv
       return
-      end              
+      end function ham2DNF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       real(prc) function hamThirring(thetat)
       implicit none
@@ -165,18 +158,18 @@
       return
       end function hamThirring
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real(prc) function ham2WilsonFerms(ps,ut)
-      use WilsonDirac
+      real(prc) function ham2NaiveFerms(ps,ut)
+      use NaiveDirac
       implicit none
       complex(prc),intent(in) :: ps(Nv*4)
       complex(prc),intent(in) :: ut(Nv*3)
       complex(prc) tmp(Nv*4)
 
-      print *,'energy 2 Wilson Fermions'
-      call IDdagD(ps,tmp,ut,.false.,baremass)
-      ham2WilsonFerms=half*dot_product(ps,tmp)
+      print *,'energy 2 Naive Fermions'
+      call IDNFdagDNF(ps,tmp,ut,.false.,baremass)
+      ham2NaiveFerms=half*dot_product(ps,tmp)
 
       return
-      end function ham2WilsonFerms
+      end function ham2NaiveFerms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      end module hmc2wilsonferms
+      end module hmc2naiveferms

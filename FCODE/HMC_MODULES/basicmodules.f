@@ -19,8 +19,8 @@ c      real(prc),parameter :: resid=1q-20
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module arraysizes
       implicit none
-      integer,parameter :: Ns = 6
-      integer,parameter :: Nt = 6
+      integer,parameter :: Ns = 4
+      integer,parameter :: Nt = 4
 #ifdef TWODIMENSIONS
       integer,parameter :: NDS = 1 ! no spatial dimensions
       integer,parameter :: NDT = 2 ! no total dimensions
@@ -55,34 +55,38 @@ c      real(prc),parameter :: resid=1q-20
 
 !     debug options
       integer,parameter :: VERBOSE=1 ! 0,1,2
+      logical :: DUPLICATE
 
 !     gauge field options
-!      integer,parameter :: GAUGETYPE=2 ! 1=QED3, 2=Thirring3, 3=Gross-Neveau
       integer GAUGETYPE ! 1=QED3, 2=Thirring3, 3=Gross-Neveau
-!      real(prc),parameter :: gbeta=0.75*one
       real(prc) :: gbeta
-      integer,parameter :: DYNAMIC=0 ! 0=quenched, 1=HMC dynamic, 2=RHMC dynamic - dynamic incomplete
-      logical,parameter :: QUENCHED=.false. ! muddled
+
+!     HMC parameters
+      real(prc) :: HMC_dt,HMC_etime
+      integer :: HMC_tsmax,tsav
+      logical :: QUENCHED
 
 !     dirac options
-      integer,parameter :: Nferms=2 
+      integer,parameter :: Nferms=1 
       integer DWkernel ! 1 for Shamir, 2 for Wilson, Mobius implementation incomplete
       integer MTYPE ! 1,2,3,4 - 2 is alt form of 3 (5 not implemented)
       integer OLTYPE ! 1,2 - 1 is direct calculation, 2 is domain wall calculation (K-type)
       integer,parameter :: RFTYPE=1 ! 1,2 - 1 is partial fraction, 2 is multiplicative 
-!      real(prc),parameter :: baremass=0.05q0 ! bare mass
       real(prc) :: baremass ! bare mass
-!      real(prc),parameter :: MDW=0.6q0 ! domain wall height/overlap mass
       real(prc) :: MDW ! domain wall height/overlap mass
       integer,parameter :: Npf=8 ! no of terms for partial fraction DOL formulation, redundant
 !      integer,parameter :: Ls=2*Npf+1 ! for partial fraction reconstruction
 #ifndef LSVALUE
-#define LSVALUE 6
+#define LSVALUE 8
 #endif
       integer,parameter :: Ls=LSVALUE ! for domain wall construction
-!      integer :: Ls ! for domain wall construction
-      real(prc),parameter :: amob=one ! am for Mobius Dm=(a+b).Dw.(2+(a-b)Dw)^-1 
-      real(prc),parameter :: bmob=zero ! b=1, Dw, b=0, Shamir (with a = 1) 
+
+!     runtime options
+      integer Naux ! generate Nauxilary fields
+      integer Nswp ! use Nswp HMC sweeps for each aux field
+
+!      real(prc),parameter :: amob=one ! am for Mobius Dm=(a+b).Dw.(2+(a-b)Dw)^-1 
+!      real(prc),parameter :: bmob=zero ! b=1, Dw, b=0, Shamir (with a = 1) 
 
 !     measurement options
 c      integer,parameter :: Nnoise=20 ! number of loops for noisy estimator
@@ -92,7 +96,6 @@ c      integer,parameter :: Nnoise=20 ! number of loops for noisy estimator
 
       print *,"GAUGETYPE:",GAUGETYPE
       print *,"gbeta:",gbeta
-      print *,"DYNAMIC:",DYNAMIC
 
       print *,"Nferms:",Nferms
       print *,"DWkernel:",DWkernel

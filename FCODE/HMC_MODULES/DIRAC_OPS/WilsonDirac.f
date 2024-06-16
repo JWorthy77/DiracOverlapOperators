@@ -59,6 +59,56 @@ c     calculates DR = DWilson*R
 
       return
       end subroutine DWilson
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine DWilsonJW(R,DR,u,DAG,mass)
+      use gammas
+      use indices
+      use options
+      implicit none
+c     calculates DR = DWilson*R
+      complex(prc),intent(in) :: R(Nv,Ndc)
+      complex(prc),intent(out) :: DR(Nv,Ndc)
+      complex(prc),intent(in) :: u(Nv,NDT)
+      logical,intent(in) :: DAG
+      real(prc),intent(in) :: mass
+      real(prc) mult
+      complex(prc),dimension(Ndc) :: gRp1,gRm1
+      integer i,ipmu,immu,mu
+
+      mult=one
+      if (DAG) then
+        mult=-one
+      end if
+!     mass term 
+      DR = mass*R
+
+!     Dirac term (anti-Hermitian)
+      do mu=1,NDT
+        do i=1,Nv
+          ipmu=iu(i,mu)
+          immu=id(i,mu)
+          gRp1=R(ipmu,:)
+          call mGmu4(gRp1,mu)
+          gRm1=R(immu,:)
+          call mGmu4(gRm1,mu)
+          DR(i,:)=DR(i,:) + mult*half*
+     &     (u(i,mu)*gRp1 - conjg(u(immu,mu))*gRm1)
+        enddo
+      enddo
+
+!     Wilson term (Hermitian)
+      do mu=1,3
+        do i=1,Nv
+          ipmu=iu(i,mu)
+          immu=id(i,mu)
+          DR(i,:)=DR(i,:) - half*
+     &     ( u(i,mu)*R(ipmu,:) - two*R(i,:)
+     &         +conjg(u(immu,mu))*R(immu,:) )
+        enddo
+      enddo
+
+      return
+      end subroutine DWilsonJW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine G5DW(R,DR,u,DAGGER,mass)
       use gammas
@@ -207,6 +257,88 @@ c     initialise
 !
 !      return
 !      end subroutine IG5DW
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine WilsonDerivsSJH(dSdA,eta,nu,DAG) ! dSdA = eta^dag.dDwdA.nu
+      use numbers
+      use gammas
+      use indices
+      implicit none
+      real(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4),intent(in) ::  eta,nu
+      logical :: DAG
+      complex(prc),dimension(4) :: lhs1,lhs2,rhs1,rhs2
+      integer mu,idirac,i
+      integer pm1
+
+      pm1=one
+      if (DAG) then
+        pm1=-one
+      endif
+
+      dSdA=0
+      do mu=1,3
+        do i=1,Nv
+          lhs1=eta(i,:)
+          rhs1=nu(iu(i,mu),:)
+          lhs2=eta(iu(i,mu),:)
+          rhs2=nu(i,:)
+          dSdA(i,mu)=real( half*zi*(dot_product(lhs1,rhs1)
+     &                             -dot_product(lhs2,rhs2) ) ) 
+          call mGmu4(rhs1,mu)
+          call mGmu4(rhs2,mu)
+          dSdA(i,mu)=dSdA(i,mu)-pm1*real( half*zi*(
+     &                            dot_product(lhs1,rhs1)
+     &                           +dot_product(lhs2,rhs2) ) ) 
+        end do
+      end do
+        
+      return
+      end subroutine WilsonDerivsSJH
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine WilsonDerivsJW(dSdA,eta,nu,DAG) ! dSdA = eta^dag.dDwdA.nu
+      use numbers
+      use gammas
+      use indices
+      implicit none
+      real(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4),intent(in) ::  eta,nu
+      logical :: DAG
+      complex(prc),dimension(4) :: lhs1,lhs2,rhs1,rhs2
+      integer mu,idirac,i
+      integer pm1
+
+      pm1=one
+      if (DAG) then
+        pm1=-one
+      endif
+
+      dSdA=0
+      do mu=1,3
+        do i=1,Nv
+
+          lhs1=eta(i,:)
+          rhs1=nu(iu(i,mu),:)
+          dSdA(i,mu)=dSdA(i,mu)+zi*half*dot_product(lhs1,rhs1)
+
+          lhs2=eta(iu(i,mu),:)
+          rhs2=nu(i,:)
+          dSdA(i,mu)=dSdA(i,mu)-zi*half*dot_product(lhs2,rhs2)
+
+          lhs1=eta(i,:)
+          rhs1=nu(iu(i,mu),:)
+          call mGmu4(rhs1,mu)
+          dSdA(i,mu)=dSdA(i,mu)-pm1*zi*half*dot_product(lhs1,rhs1)
+
+          lhs2=eta(iu(i,mu),:)
+          rhs2=nu(i,:)
+          call mGmu4(rhs2,mu)
+          dSdA(i,mu)=dSdA(i,mu)-pm1*zi*half*dot_product(lhs2,rhs2)
+
+        end do
+      end do
+        
+      return
+      end subroutine WilsonDerivsJW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine WilsonDerivs(dSdA,eta,nu,DAG) ! dSdA = eta^dag.dDwdA.nu
       use numbers

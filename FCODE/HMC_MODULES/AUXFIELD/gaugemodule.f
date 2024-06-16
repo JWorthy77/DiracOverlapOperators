@@ -13,12 +13,13 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine makeGaugeField(GZERO)
       use gaugefield
+      use hmc2naiveferms
       use hmc2wilsonferms
       use hmc2domwallferms
       implicit none
 
       logical GZERO
-      integer isw,Nsw
+      integer isw
       real(prc) dH
       real(prc) thetat(Nv,3)
 
@@ -28,19 +29,19 @@
         return
       end if
 
-      Naccepted=0
-      Nsw=10
 !     loop over Nsweep Hybrid MC steps
-      do isw=1,Nsw
-        print *,"sweep:",isw," of ",Nsw
+      Naccepted=0
+      do isw=1,Nswp
+        print *,"sweep:",isw," of ",Nswp
         thetat=theta
-        call march2DW(dH,thetat)
-!        call march2DomWallFerms(dH,thetat)
+!        call march2DNF(dH,thetat)
+!        call march2DW(dH,thetat)
+        call march2DomWallFerms(dH,thetat)
         call accept(dH,thetat)
       end do
       call coef(u,theta)
-      print *,Naccepted,"accepted of",Nsw
-      write(100,*) Naccepted,"accepted of",Nsw
+      print *,Naccepted,"accepted of",Nswp
+      write(100,*) Naccepted,"accepted of",Nswp
       return
       end subroutine makeGaugeField
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -52,8 +53,11 @@
       real(prc) y
       real x
 
-      y=exp(dH)
+      y=exp(dH) ! dH = Hprev - Hproposed
       x=urv()
+      if (DUPLICATE) then
+        read(12,*) x
+      endif
       print *,"dH:",dH
       print *,"accept if x:",x," < exp(dH)=y:",y
       if (x.lt.y) then

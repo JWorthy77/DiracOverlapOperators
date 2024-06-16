@@ -9,6 +9,32 @@
 
       contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      subroutine DomWall(R,DR,u,DAG,mass)
+!      implicit none
+!      complex(prc),intent(in) :: R(Nv,4,Ls)
+!      complex(prc),intent(out) :: DR(Nv,4,Ls)
+!      complex(prc),intent(in) :: u(Nv,3)
+!      logical,intent(in) :: DAG
+!      real(prc),intent(in) :: mass
+!      complex(prc) :: TMP(Nv,4,Ls)
+!      integer baseMTYPE
+!
+!      baseMTYPE=MTYPE;
+!      if (.not.DAG) then
+!        call DDW(R,TMP,u,DAG,mass)
+!        MTYPE=1
+!        call IDDW(TMP,DR,u,DAG,one)
+!        MTYPE=baseMTYPE
+!      else 
+!        MTYPE=1
+!        call IDDW(R,TMP,u,DAG,one)
+!        MTYPE=baseMTYPE
+!        call DDW(TMP,DR,u,DAG,mass)
+!      end if
+!
+!      return
+!      end subroutine DomWall
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine MDomWall(R,DR,u,DAG,mass)
       implicit none
       complex(prc),intent(in) :: R(Nv,4,Ls)
@@ -155,7 +181,7 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       complex(prc) TMP(Nv,4,Ls)
       procedure(),pointer :: Dptr=>NULL()
 
-      if (DWkernel.eq.2) then
+      if (DWkernel.eq.1) then
         Dptr => DDW_Shamir
       elseif (DWkernel.eq.2) then
         Dptr => DDW_Wilson
@@ -176,6 +202,33 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
 
       return
       end subroutine IDDW
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine IDDWdagDDW(RR,DR,u,mass)
+!     solve DDWdag.DDW.DR = RR
+      use options
+      implicit none
+      complex(prc) RR(Nv,4,Ls),DR(Nv,4,Ls)
+      complex(prc) u(Nv,3)
+      logical DAGGER
+      real(prc) mass
+!      complex(prc) TMP(Nv,4,Ls)
+      procedure(),pointer :: Dptr=>NULL()
+
+      if (DWkernel.eq.1) then
+        Dptr => DDW_Shamir
+      elseif (DWkernel.eq.2) then
+        Dptr => DDW_Wilson
+      elseif (DWkernel.eq.3) then
+        Dptr => DDW_OWilson
+      else
+        print *, "Domain Wall kernel not set properly"
+        stop
+      endif
+
+      call IMdagM_DWkernel(RR,DR,u,mass,Dptr)
+
+      return
+      end subroutine IDDWdagDDW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine IMdagM_DWkernel(RR,DR,u,mass,Dptr)
 !     solve MdagM.DR = RR for M=DDW
@@ -222,7 +275,7 @@ c     initialise
       end do
 
 8     continue
-!      print *,itercg,niterc,betan
+      write(401,*) itercg,niterc,betan
       oc_idx=oc_idx+1
       outer_count=outer_count+itercg
 
@@ -447,5 +500,24 @@ c     calculates DR = Pdag.IDDW(m).DDW(1).P.R where P is the permutation matrix
 
       return
       end subroutine DomainWallDerivs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine DomainWallDerivsComplex(dSdA,eta,nu,DAG,KTYPE)
+      implicit none
+      complex(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
+      logical,intent(in) :: DAG
+      integer,intent(in) :: KTYPE ! 1=Shamir,2=Wilson
+
+      if (KTYPE.eq.1) then
+        call ShamirDomainWallDerivsComplex(dSdA,eta,nu,DAG)
+!      elseif (KTYPE.eq.2) then
+!        call WilsonDomainWallDerivs(dSdA,eta,nu,DAG)
+      else
+        print *,"KTYPE not set properly"
+        stop
+      endif
+
+      return
+      end subroutine DomainWallDerivsComplex
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module domainwallmod
