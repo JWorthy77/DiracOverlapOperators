@@ -13,9 +13,9 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine makeGaugeField(GZERO)
       use gaugefield
-      use hmc2naiveferms
-      use hmc2wilsonferms
-      use hmc2domwallferms
+!      use hmc2wilsonferms
+!      use hmc2domwallferms
+      use rhmc1domwallferm
       implicit none
 
       logical GZERO
@@ -29,14 +29,18 @@
         return
       end if
 
+      theta=0
+      call coef(u,theta)
+      call initRHMC()
+
 !     loop over Nsweep Hybrid MC steps
       Naccepted=0
       do isw=1,Nswp
         print *,"sweep:",isw," of ",Nswp
         thetat=theta
-!        call march2DNF(dH,thetat)
 !        call march2DW(dH,thetat)
-        call march2DomWallFerms(dH,thetat)
+!        call march2DomWallFerms(dH,thetat)
+        call march1DomWallFerm(dH,thetat)
         call accept(dH,thetat)
       end do
       call coef(u,theta)

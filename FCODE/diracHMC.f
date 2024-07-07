@@ -39,8 +39,11 @@
       use paulimodule
       use indices
       use gaugefield
+      use zolomodule
+      use dwcoeffs
       implicit none
       real(prc) tav
+      type(zolotarev) :: zolo
 
       call initRVs(.false.,.false.,0) ! uses a time based seed initialiser
 
@@ -95,6 +98,11 @@
 
       theta=0
       call coef(u,theta)
+
+      call setZolo(1d-2,10d0,Ls,zolo)
+      call getRoots(zolo)
+      omega=zolo%roots
+      print *,"omega:",omega
 
       return
       end subroutine init

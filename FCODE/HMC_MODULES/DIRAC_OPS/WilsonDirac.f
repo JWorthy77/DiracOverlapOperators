@@ -258,7 +258,7 @@ c     initialise
 !      return
 !      end subroutine IG5DW
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine WilsonDerivsSJH(dSdA,eta,nu,DAG) ! dSdA = eta^dag.dDwdA.nu
+      subroutine WilsonDerivsSJH(dSdA,eta,nu,DAG) 
       use numbers
       use gammas
       use indices
@@ -411,5 +411,5 @@ c     initialise
         
       return
       end subroutine WilsonDerivsComplex
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module WilsonDirac

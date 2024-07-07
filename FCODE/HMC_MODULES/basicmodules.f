@@ -19,8 +19,8 @@ c      real(prc),parameter :: resid=1q-20
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module arraysizes
       implicit none
-      integer,parameter :: Ns = 4
-      integer,parameter :: Nt = 4
+      integer,parameter :: Ns = 6
+      integer,parameter :: Nt = 6
 #ifdef TWODIMENSIONS
       integer,parameter :: NDS = 1 ! no spatial dimensions
       integer,parameter :: NDT = 2 ! no total dimensions
@@ -77,7 +77,7 @@ c      real(prc),parameter :: resid=1q-20
       integer,parameter :: Npf=8 ! no of terms for partial fraction DOL formulation, redundant
 !      integer,parameter :: Ls=2*Npf+1 ! for partial fraction reconstruction
 #ifndef LSVALUE
-#define LSVALUE 8
+#define LSVALUE 10
 #endif
       integer,parameter :: Ls=LSVALUE ! for domain wall construction
 

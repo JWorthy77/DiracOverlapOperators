@@ -105,7 +105,8 @@ c     mass terms
       do l=1,Ls  ! diagonal terms
         eta_l=eta(:,:,l)
         nu_l=nu(:,:,l)
-        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
+!        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
         dSdA=dSdA+tmp
       end do
 

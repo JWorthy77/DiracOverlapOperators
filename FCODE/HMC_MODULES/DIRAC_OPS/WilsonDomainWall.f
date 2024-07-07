@@ -274,17 +274,17 @@ c     calculates DR = (1-gamma)/2 R (gi should be 4 typically)
       return
       end subroutine Pminus
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine WilsonDomainWallDerivs(dSdA,eta,nu,DAG)
+      subroutine WilsonDomainWallDerivs(dSdA,eta,nu,DAG,mass)
       use numbers
       use gammas
-      use indices
       use WilsonDirac
       implicit none
       real(prc),intent(out) :: dSdA(Nv,3)
       complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
       logical,intent(in) :: DAG
+      real(prc),intent(in) :: mass
       real(prc) :: tmp(Nv,3)
-      complex(prc),dimension(Nv,4) ::  eta_l,nu_l
+      complex(prc),dimension(Nv,4) ::  eta_l,nu_l,tmp_l
       integer l
       integer pm1
 
@@ -292,41 +292,170 @@ c     calculates DR = (1-gamma)/2 R (gi should be 4 typically)
       do l=1,Ls  ! diagonal terms
         eta_l=eta(:,:,l)
         nu_l=nu(:,:,l)
-        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
         dSdA=dSdA+tmp
       end do
 
       do l=1,Ls-1  ! upper diagonal
         if (.not.DAG) then
           eta_l=eta(:,:,l)
-        else
-          call Pplus(eta(:,:,l),eta_l,4)
-        endif
-        if (.not.DAG) then
           call Pminus(nu(:,:,l+1),nu_l,4)
         else
+          call Pplus(eta(:,:,l),eta_l,4)
           nu_l=nu(:,:,l+1)
         endif
-        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
         dSdA=dSdA+tmp
       end do
 
       do l=2,Ls  ! lower diagonal
         if (.not.DAG) then
           eta_l=eta(:,:,l)
-        else
-          call Pminus(eta(:,:,l),eta_l,4)
-        endif
-        if (.not.DAG) then
           call Pplus(nu(:,:,l-1),nu_l,4)
         else
+          call Pminus(eta(:,:,l),eta_l,4)
           nu_l=nu(:,:,l-1)
         endif
-        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
         dSdA=dSdA+tmp
       end do
 
+!     mass components
+      if (.not.DAG) then
+        eta_l=eta(:,:,1)
+        nu_l=nu(:,:,Ls)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        eta_l=eta(:,:,Ls)
+        nu_l=nu(:,:,1)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+      else ! if DAG
+        eta_l=eta(:,:,1)
+        nu_l=nu(:,:,Ls)
+        if (MTYPE.eq.3) then
+          tmp_l=-zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        eta_l=eta(:,:,Ls)
+        nu_l=nu(:,:,1)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+      endif
+
       return
       end subroutine WilsonDomainWallDerivs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine WilsonDomainWallDerivsComplex(dSdA,eta,nu,DAG,mass)
+      use numbers
+      use gammas
+      use WilsonDirac
+      implicit none
+      complex(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
+      logical,intent(in) :: DAG
+      real(prc),intent(in) :: mass
+      real(prc) :: tmp(Nv,3)
+      complex(prc),dimension(Nv,4) ::  eta_l,nu_l,tmp_l
+      integer l
+      integer pm1
+
+      dSdA=0
+      do l=1,Ls  ! diagonal terms
+        eta_l=eta(:,:,l)
+        nu_l=nu(:,:,l)
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+tmp
+      end do
+
+      do l=1,Ls-1  ! upper diagonal
+        if (.not.DAG) then
+          eta_l=eta(:,:,l)
+          call Pminus(nu(:,:,l+1),nu_l,4)
+        else
+          call Pplus(eta(:,:,l),eta_l,4)
+          nu_l=nu(:,:,l+1)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+tmp
+      end do
+
+      do l=2,Ls  ! lower diagonal
+        if (.not.DAG) then
+          eta_l=eta(:,:,l)
+          call Pplus(nu(:,:,l-1),nu_l,4)
+        else
+          call Pminus(eta(:,:,l),eta_l,4)
+          nu_l=nu(:,:,l-1)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+tmp
+      end do
+
+!     mass components
+      if (.not.DAG) then
+        eta_l=eta(:,:,1)
+        nu_l=nu(:,:,Ls)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        eta_l=eta(:,:,Ls)
+        nu_l=nu(:,:,1)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+      else ! if DAG
+        eta_l=eta(:,:,1)
+        nu_l=nu(:,:,Ls)
+        if (MTYPE.eq.3) then
+          tmp_l=-zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        eta_l=eta(:,:,Ls)
+        nu_l=nu(:,:,1)
+        if (MTYPE.eq.3) then
+          tmp_l=zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+      endif
+
+      return
+      end subroutine WilsonDomainWallDerivsComplex
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module WilsonDomWall
