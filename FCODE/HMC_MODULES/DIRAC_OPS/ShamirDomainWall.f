@@ -96,19 +96,10 @@ c     mass terms
       real(prc),intent(out) :: dSdA(Nv,3)
       complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
       logical,intent(in) :: DAG
-      real(prc) :: tmp(Nv,3)
-      complex(prc),dimension(Nv,4) ::  eta_l,nu_l
-      integer l
-      integer pm1
+      complex(prc) :: dSdAC(Nv,3)
 
-      dSdA=0
-      do l=1,Ls  ! diagonal terms
-        eta_l=eta(:,:,l)
-        nu_l=nu(:,:,l)
-!        call WilsonDerivs(tmp,eta_l,nu_l,DAG)
-        call WilsonDerivsJW(tmp,eta_l,nu_l,DAG)
-        dSdA=dSdA+tmp
-      end do
+      call ShamirDomainWallDerivsComplex(dSdAC,eta,nu,DAG)
+      dSdA=dSdAC
 
       return
       end subroutine ShamirDomainWallDerivs

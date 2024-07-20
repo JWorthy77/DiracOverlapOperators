@@ -69,13 +69,19 @@
       complex(prc),intent(out) :: ps(Nv,4,Ls)
       complex(prc),intent(in) :: ut(Nv,3)
       complex(prc) :: TMP(Nv,4,Ls)
+      complex(prc) :: pstmp(Nv,4)
       integer baseMTYPE
       integer,parameter :: Npow=12
       real(prc) const,num(Npow),denom(Npow)
-      
+      integer l
+     
       baseMTYPE=MTYPE
 
-      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
+!      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
+      call setCGRVs(4*Nv,pstmp) ! randomise pseudo-fermion field
+      do l=1,Ls
+        ps(:,:,l)=pstmp
+      end do
 !      open(unit=19,file='fort.121',status='unknown')
 !      read(19,*) TMP
 !      close(19)
@@ -88,6 +94,7 @@
       num=quarter_num
       denom=quarter_denom
       call DDWdagDDWpow(ps,TMP,ut,baremass,Npow,const,num,denom)
+!!      call DDWdagDDWpow(ps,TMP,ut,one,Npow,const,num,denom) ! debug
 
 !      print *,"TMP:",transToThere(TMP)
       
@@ -104,6 +111,7 @@ c      print *,""
       denom=mquarter_denom
       MTYPE=1
       call DDWdagDDWpow(TMP,ps,ut,one,Npow,const,num,denom)
+!!      call DDWdagDDWpow(TMP,ps,ut,one,Npow,const,num,denom) ! debug
 
 !      print *,"ps:",transToThere(ps)
 !      stop
@@ -145,15 +153,14 @@ c      print *,""
 !      write(223,*) F
 !      print *,"dSdp:",F
 !      stop
-      if (VB_DWF) then ; print *,"sum(F):",sum(F),sum(F*F) ; endif
       pp=pp-dt*half*F ! half time step before leap frog
       do ts=1,tsmax  ! time march
-        if (VB_DWF) then ; print *,ts ; endif
+        if (VB_DWF) then; print *,ts-1,"sum(F):",sum(F),sum(F*F); endif
         thetat=thetat+dt*pp
 !        if(VB_DWF) print *,"sum(thetat):",sum(thetat),sum(thetat*thetat)
         call coef(ut,thetat)
         call force1DomWallFerm(thetat,ut,ps,F)
-        if (VB_DWF) print *,"sum(F):",sum(F),sum(F*F)
+!        if (VB_DWF) print *,"sum(F):",sum(F),sum(F*F)
         ytest=urv()
 !        if(VB_DWF) then ; print *,"ytest:",ytest,"prob:",proby ; endif
         if (ytest.lt.proby) then
@@ -166,6 +173,7 @@ c      print *,""
 !      pp=pp+half*dt*F ! correction to half step if tsmax reached
 
 501   continue
+      if (VB_DWF) then ; print *,ts,"sum(F):",sum(F),sum(F*F); endif
       h1=ham1DomWallFerm(thetat,ut,pp,ps) ! final hamiltonian energy
       if (VB_DWF) then ; print *,"h1:",h1 ; end if
       if (VB_DWF) then ; print *,"ts:",ts ; end if
@@ -229,12 +237,14 @@ c      print *,""
       MTYPE=1
       const=quarter_const ; num=quarter_num ; denom=quarter_denom
       call DDWdagDDWpow(ps,psihat,ut,one,Npow,const,num,denom)
+!      call DDWdagDDWpow(ps,psihat,ut,one,Npow,const,num,denom) ! debug
 !      print *,"psihat:",transToThere(psihat)
 !      stop
 
       MTYPE=baseMTYPE
       const=mhalf_const ; num=mhalf_num ; denom=mhalf_denom
       call DDWdagDDWpow(psihat,psibar,ut,baremass,Npow,const,num,denom)
+!      call DDWdagDDWpow(psihat,psibar,ut,baremass,Npow,const,num,denom) ! debug
 !      print *,"psibar:",transToThere(psibar)
 !      stop
 
@@ -246,10 +256,15 @@ c      print *,""
         call IDDWdagDDWpC(ps,lhs1,ut,one,quarter_denom(j))
         call IDDWdagDDWpC(psibar,rhs1,ut,one,quarter_denom(j))
         call DDWdagDDWDerivs(dSdA1,lhs1,rhs1,ut,KTYPE,one)
+!        call IDDWdagDDWpC(ps,lhs1,ut,one,quarter_denom(j)) ! debug
+!        call IDDWdagDDWpC(psibar,rhs1,ut,one,quarter_denom(j)) ! debug
+!        call DDWdagDDWDerivs(dSdA1,lhs1,rhs1,ut,KTYPE,one) ! debug
 
         MTYPE=baseMTYPE
         call IDDWdagDDWpC(psihat,rhs2,ut,baremass,mhalf_denom(j))
         call DDWdagDDWDerivs(dSdA2,rhs2,rhs2,ut,KTYPE,baremass)
+!        call IDDWdagDDWpC(psihat,rhs2,ut,zero,mhalf_denom(j)) ! debug
+!        call DDWdagDDWDerivs(dSdA2,rhs2,rhs2,ut,KTYPE,zero) ! debug
 
         dSdA=dSdA+2*quarter_num(j)*dSdA1+mhalf_num(j)*dSdA2
         dSdA1tot=dSdA1tot+quarter_num(j)*dSdA1
@@ -324,13 +339,14 @@ c      print *,""
       MTYPE=1
       const=quarter_const ; num=quarter_num ; denom=quarter_denom
       call DDWdagDDWpow(ps,lhs,ut,one,N,const,num,denom)
-
+!      call DDWdagDDWpow(ps,lhs,ut,one,N,const,num,denom) ! debug
 !      print *,"lhs:",transToThere(lhs)
 !      stop
 
       MTYPE=baseMTYPE
       const=mhalf_const ; num=mhalf_num ; denom=mhalf_denom
       call DDWdagDDWpow(lhs,rhs,ut,baremass,N,const,num,denom)
+!      call DDWdagDDWpow(lhs,rhs,ut,baremass,N,const,num,denom) ! debug
 !      print *,"rhs:",transToThere(rhs)
 !      stop
 

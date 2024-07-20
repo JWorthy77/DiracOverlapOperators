@@ -97,12 +97,16 @@
 #endif
 
       theta=0
+      call setGRVs(3*Nv,theta)
       call coef(u,theta)
 
-      call setZolo(1d-2,10d0,Ls,zolo)
-      call getRoots(zolo)
-      omega=zolo%roots
-      print *,"omega:",omega
+      omega=1.0
+      if (dwkernel.eq.3) then
+        call setZolo(1d-1,10d0,Ls,zolo)
+        call getRoots(zolo)
+        omega=zolo%roots
+        print *,"omega:",omega
+      end if
 
       return
       end subroutine init

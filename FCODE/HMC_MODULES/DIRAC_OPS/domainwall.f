@@ -152,9 +152,8 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       complex(prc),intent(in) :: R(Nv,4,Ls)
       complex(prc),intent(out) :: DR(Nv,4,Ls)
       complex(prc),intent(in) :: u(Nv,3)
-      logical DAGGER
-      real(prc) mass
-      integer baseMTYPE
+      logical,intent(in) :: DAGGER
+      real(prc),intent(in) :: mass
 
       if (DWkernel.eq.1) then
         call DDW_Shamir(R,DR,u,DAGGER,mass)

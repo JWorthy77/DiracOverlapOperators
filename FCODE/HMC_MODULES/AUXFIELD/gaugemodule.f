@@ -29,8 +29,6 @@
         return
       end if
 
-      theta=0
-      call coef(u,theta)
       call initRHMC()
 
 !     loop over Nsweep Hybrid MC steps

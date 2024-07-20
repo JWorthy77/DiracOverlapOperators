@@ -6,6 +6,7 @@
       use indices
       use rvmodule
       use options
+      use WilsonExtraMod
       implicit none
       logical,parameter :: VB_H2=.true.
 !      real(prc) :: etime,dt

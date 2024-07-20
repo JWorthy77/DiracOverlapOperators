@@ -4,6 +4,7 @@
       use numbers
       use ratfuncs
       use WilsonDirac
+      use WilsonExtraMod
       implicit none
       type ioptions
         type(sgnratfunc) :: SRF

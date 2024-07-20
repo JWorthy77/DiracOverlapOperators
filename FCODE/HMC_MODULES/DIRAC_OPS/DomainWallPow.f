@@ -65,6 +65,11 @@
 
       dSdA=dSdA1+dSdA2
 
+!      call DDW(lhs,lhs1,ut,.false.,mass)
+!      print *,"sum(lhs1*rhs):",sum(conjg(lhs1)*rhs)
+!      call DDW(rhs,rhs1,ut,.true.,mass)
+!      print *,"sum(lhs*rhs1):",sum(conjg(lhs)*rhs1)
+!      stop
       return
       end subroutine DDWdagDDWDerivs
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
