@@ -155,6 +155,8 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       logical,intent(in) :: DAGGER
       real(prc),intent(in) :: mass
 
+!      print *,"dwkernel:",dwkernel
+
       if (DWkernel.eq.1) then
         call DDW_Shamir(R,DR,u,DAGGER,mass)
       elseif (DWkernel.eq.2) then
@@ -194,6 +196,9 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       if (.not. DAGGER) then
         call Dptr(RR,TMP,u,.true.,mass)
         call IMdagM_DWkernel(TMP,DR,u,mass,Dptr)
+        open(unit=105,file="fort.105",status='unknown')
+        write(105,*) DR
+        close(105)
       elseif (DAGGER) then
         call IMdagM_DWkernel(RR,TMP,u,mass,Dptr) 
         call Dptr(TMP,DR,u,.false.,mass)
@@ -234,7 +239,7 @@ c     calculates DR = DDW*R where DDW is the domain wall formulation
       use countmod
       implicit none
       integer,parameter :: kferm = 4*Nv*Ls
-      integer,parameter :: niterc=Nv*Ls
+      integer,parameter :: niterc=Nv*Ls*100
       complex(prc) RR(kferm), DR(kferm)
       complex(prc) u(Nv,3)
       real(prc) mass,shft
@@ -440,27 +445,41 @@ c     calculates DR = Pdag.IDDW(1).DDW(m).P.R where P is the permutation matrix
       procedure(),pointer :: Dptr => NULL()
       integer MTMP
 
+!      print *,"KDDW:",dwkernel
+
       if (DWkernel.eq.1) then
         Dptr=>DDW_Shamir
       elseif (DWkernel.eq.2) then
         Dptr=>DDW_Wilson
-        print *,"KDDW with Wilson"
-      elseif (DWkernel.eq.2) then
+!        print *,"KDDW with Wilson"
+      elseif (DWkernel.eq.3) then
         Dptr=>DDW_OWilson
-        print *,"KDDW with OWilson"
+!        print *,"KDDW with OWilson"
       else
         print *,"DW kernel not set properly"
         stop
       endif
-      print *,"MTYPE:",MTYPE
+!      print *,"MTYPE:",MTYPE
 
       MTMP=MTYPE
       gi=4
       if (.not.DAGGER) then
+        open(unit=101,file="fort.101",status='unknown')
+        write(101,*) R
+        close(101)
         call PermM(R,TMP,.false.,gi)
+        open(unit=102,file="fort.102",status='unknown')
+        write(102,*) TMP
+        close(102)
         call Dptr(TMP,DR,u,.false.,mass)
+        open(unit=103,file="fort.103",status='unknown')
+        write(103,*) DR
+        close(103)
         MTYPE=1
         call IDDW(DR,TMP,u,.false.,one)
+        open(unit=104,file="fort.104",status='unknown')
+        write(104,*) TMP
+        close(104)
         call PermM(TMP,DR,.true.,gi)
       elseif(DAGGER) then
         call PermM(R,TMP,.false.,gi)
@@ -490,10 +509,10 @@ c     calculates DR = Pdag.IDDW(m).DDW(1).P.R where P is the permutation matrix
 
       if (DWkernel.eq.2) then
         Dptr=>DDW_Wilson
-        print *,"KDDW with Wilson"
+!        print *,"KDDW with Wilson"
       elseif (DWkernel.eq.3) then
         Dptr=>DDW_OWilson
-        print *,"KDDW with OWilson"
+!        print *,"KDDW with OWilson"
       else
         print *,"DW kernel not set properly"
         stop

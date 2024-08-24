@@ -67,7 +67,8 @@ c      real(prc),parameter :: resid=1q-20
       logical :: QUENCHED
 
 !     dirac options
-      integer,parameter :: Nferms=1 
+      integer :: HMCtype ! 1 for HMC, 2 for RHMC
+      integer Nferms ! set by HMCtype 
       integer DWkernel ! 1 for Shamir, 2 for Wilson, Mobius implementation incomplete
       integer MTYPE ! 1,2,3,4 - 2 is alt form of 3 (5 not implemented)
       integer OLTYPE ! 1,2 - 1 is direct calculation, 2 is domain wall calculation (K-type)
@@ -77,7 +78,7 @@ c      real(prc),parameter :: resid=1q-20
       integer,parameter :: Npf=8 ! no of terms for partial fraction DOL formulation, redundant
 !      integer,parameter :: Ls=2*Npf+1 ! for partial fraction reconstruction
 #ifndef LSVALUE
-#define LSVALUE 14
+#define LSVALUE 26
 #endif
       integer,parameter :: Ls=LSVALUE ! for domain wall construction
 

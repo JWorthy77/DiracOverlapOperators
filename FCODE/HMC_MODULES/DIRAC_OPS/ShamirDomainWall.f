@@ -89,9 +89,9 @@ c     mass terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine ShamirDomainWallDerivs(dSdA,eta,nu,DAG)
       use numbers
-      use gammas
-      use indices
-      use WilsonDirac
+!      use gammas
+!      use indices
+!      use WilsonDirac
       implicit none
       real(prc),intent(out) :: dSdA(Nv,3)
       complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
@@ -106,8 +106,8 @@ c     mass terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine ShamirDomainWallDerivsComplex(dSdA,eta,nu,DAG)
       use numbers
-      use gammas
-      use indices
+!      use gammas
+!      use indices
       use WilsonDirac
       implicit none
       complex(prc),intent(out) :: dSdA(Nv,3)

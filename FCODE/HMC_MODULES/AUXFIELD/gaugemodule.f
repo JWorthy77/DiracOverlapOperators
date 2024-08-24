@@ -14,8 +14,9 @@
       subroutine makeGaugeField(GZERO)
       use gaugefield
 !      use hmc2wilsonferms
-!      use hmc2domwallferms
-      use rhmc1domwallferm
+      use hmc2domwallferms
+      use hmc2olferms
+!      use rhmc1domwallferm
       implicit none
 
       logical GZERO
@@ -29,7 +30,11 @@
         return
       end if
 
-      call initRHMC()
+      if (HMCtype.eq.3) then
+!        call initRHMC()
+        print *,"uncomment"
+        stop
+      endif
 
 !     loop over Nsweep Hybrid MC steps
       Naccepted=0
@@ -37,8 +42,21 @@
         print *,"sweep:",isw," of ",Nswp
         thetat=theta
 !        call march2DW(dH,thetat)
-!        call march2DomWallFerms(dH,thetat)
-        call march1DomWallFerm(dH,thetat)
+        if (HMCtype.eq.1) then
+!          call march2DomWallFerms(dH,thetat)
+          print *,"2 domwall ferms not compiled"
+!          stop
+        elseif (HMCtype.eq.2) then
+          call march2OLFerms(dH,thetat)
+!          print *,"2 ol ferms not compiled"
+!          stop
+        elseif (HMCtype.eq.3) then
+!          call march1DomWallFerm(dH,thetat)
+          print *,"1 domwall ferm not compiled"
+          stop
+        end if
+        write(199,*) "dH:",dH
+        flush(199)
         call accept(dH,thetat)
       end do
       call coef(u,theta)

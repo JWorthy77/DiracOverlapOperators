@@ -79,6 +79,8 @@
 
 !      call setCGRVs(4*Nv*Ls,ps) ! randomise pseudo-fermion field
       call setCGRVs(4*Nv,pstmp) ! randomise pseudo-fermion field
+!      ps=zero
+!      ps(:,:,1)=pstmp ! DB
       do l=1,Ls
         ps(:,:,l)=pstmp
       end do

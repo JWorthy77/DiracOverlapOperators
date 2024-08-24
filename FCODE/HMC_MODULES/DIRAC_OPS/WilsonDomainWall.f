@@ -204,7 +204,7 @@ c     mass terms
         endif
         DR(:,:,1)=DR(:,:,1)-mass*TR3
 
-      elseif ((MTYPE.eq.2).or.(MTYPE.eq.3)) then
+      elseif (MTYPE.eq.3) then
 
         if (.not.DAGGER) then
           zkappa=cmplx(0,-mass)
@@ -344,6 +344,114 @@ c     calculates DR = (1-gamma)/2 R (gi should be 4 typically)
       if (.not.DAG) then
 
         eta_l=omega(1)*eta(:,:,1)
+!        eta_l=eta(:,:,1) ! DB
+        if (MTYPE.eq.1) then
+          call Pplus(nu(:,:,Ls),nu_l,4)
+        else if (MTYPE.eq.3) then
+          nu_l=nu(:,:,Ls)
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        eta_l=omega(Ls)*eta(:,:,Ls)
+!        eta_l=eta(:,:,Ls) ! DB
+        if (MTYPE.eq.1) then
+          call Pminus(nu(:,:,1),nu_l,4)
+        else if (MTYPE.eq.3) then
+          nu_l=nu(:,:,1)
+          tmp_l=zi*nu_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,nu_l,4)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+      else if(DAG) then 
+
+        nu_l=omega(Ls)*nu(:,:,Ls)
+!        nu_l=nu(:,:,Ls) ! DB
+        if (MTYPE.eq.1) then
+          call Pminus(eta(:,:,1),eta_l,4)
+        else if (MTYPE.eq.3) then
+          eta_l=eta(:,:,1)
+          tmp_l=zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pminus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+
+        nu_l=omega(1)*nu(:,:,1)
+!        nu_l=nu(:,:,1) ! DB
+        if (MTYPE.eq.1) then
+          call Pplus(eta(:,:,Ls),eta_l,4)
+        else if (MTYPE.eq.3) then
+          eta_l=eta(:,:,Ls)
+          tmp_l=zi*eta_l
+          call mGmu(tmp_l,4)
+          call Pplus(tmp_l,eta_l,4)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA-mass*tmp
+      endif
+
+      return
+      end subroutine WilsonDomainWallDerivsComplex
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine WilsonDomainWallDerivsComplexNZ(dSdA,eta,nu,DAG,mass)
+      use numbers
+      use gammas
+      use WilsonDirac
+      use dwcoeffs
+      implicit none
+      complex(prc),intent(out) :: dSdA(Nv,3)
+      complex(prc),dimension(Nv,4,Ls),intent(in) ::  eta,nu
+      logical,intent(in) :: DAG
+      real(prc),intent(in) :: mass
+      complex(prc) :: tmp(Nv,3)
+      complex(prc),dimension(Nv,4) ::  eta_l,nu_l,tmp_l
+      integer l
+      integer pm1
+
+      dSdA=0
+      do l=1,Ls  ! diagonal terms
+        eta_l=eta(:,:,l)
+        nu_l=nu(:,:,l)
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+omega(l)*tmp
+      end do
+
+      do l=1,Ls-1  ! upper diagonal
+        if (.not.DAG) then
+          eta_l=omega(l)*eta(:,:,l)
+          call Pminus(nu(:,:,l+1),nu_l,4)
+        else
+          call Pplus(eta(:,:,l),eta_l,4)
+          nu_l=omega(l+1)*nu(:,:,l+1)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+tmp
+      end do
+
+      do l=2,Ls  ! lower diagonal
+        if (.not.DAG) then
+          eta_l=omega(l)*eta(:,:,l)
+          call Pplus(nu(:,:,l-1),nu_l,4)
+        else
+          call Pminus(eta(:,:,l),eta_l,4)
+          nu_l=omega(l-1)*nu(:,:,l-1)
+        endif
+        call WilsonDerivsComplex(tmp,eta_l,nu_l,DAG)
+        dSdA=dSdA+tmp
+      end do
+
+!     mass components
+      if (.not.DAG) then
+
+        eta_l=omega(1)*eta(:,:,1)
         if (MTYPE.eq.1) then
           call Pplus(nu(:,:,Ls),nu_l,4)
         else if (MTYPE.eq.3) then
@@ -395,6 +503,6 @@ c     calculates DR = (1-gamma)/2 R (gi should be 4 typically)
       endif
 
       return
-      end subroutine WilsonDomainWallDerivsComplex
+      end subroutine WilsonDomainWallDerivsComplexNZ
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end module WilsonDomWall

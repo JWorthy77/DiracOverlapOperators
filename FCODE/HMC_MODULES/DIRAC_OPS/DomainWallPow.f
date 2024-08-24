@@ -241,7 +241,7 @@
       x=xL ; 
       do j=1,nx
         pfval=evalRealParFrac(x,N,const,num,denom)
-        write(*,'(4f16.8)') x,x**-0.5,pfval,abs(pfval-x**-0.5)
+        write(*,'(4f16.8)') x,x**(-0.5),pfval,abs(pfval-x**(-0.5))
         x=x+dx
       end do
 
@@ -263,7 +263,7 @@
       x=xL ; 
       do j=1,nx
         pfval=evalRealParFrac(x,N,const,num,denom)
-        write(*,'(4f16.8)') x,x**-0.25,pfval,abs(pfval-x**-0.25)
+        write(*,'(4f16.8)') x,x**(-0.25),pfval,abs(pfval-x**(-0.25))
         x=x+dx
       end do
 

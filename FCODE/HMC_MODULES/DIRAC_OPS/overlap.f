@@ -32,7 +32,12 @@
 
       if (MTYPE.eq.1) then ! DOL = (1+m) + (1-m).V
 
-        call VOLMWpf(R,DR,u,DAGGER,-MDW,SRF)
+!        if (DAGGER .eq. .false.) then
+          call VOLMWpf(R,DR,u,DAGGER,-MDW,SRF)
+!        elseif (DAGGER .eq. .true.) then
+!          call VOLMWpfDag(R,DR,u,DAGGER,-MDW,SRF)
+!        endif
+        
         DR=(one+mass)/two*R + (one-mass)/two*DR
 
       elseif (MTYPE.eq.3) then ! DOL = (1+i.m.g3) + (1-i.m.g3).V
@@ -71,6 +76,24 @@
           call mGmu(TMP,4)
           DR=VR+zi*mass*TMP
           DR=(DL+DR)/two
+        endif
+
+      elseif (MTYPE.eq.5) then ! DOL = (1-i.m.g3) + (1+i.m.g3).V
+!       this is not the form corresponding to the domain wall formulation MTYPE=3
+        if (.not.DAGGER) then
+          call VOLMWpf(R,VR,u,DAGGER,-MDW,SRF)
+          DL=(R+VR)/two
+          DR=zi*mass*(-R+VR)/two
+          call mGmu(DR,4)
+          DR=DL+DR
+        elseif (DAGGER) then
+          call VOLMWpf(R,VR,u,DAGGER,-MDW,SRF)
+          DL=(R+VR)/two
+          TMP=R
+          call mGmu(TMP,4)
+          call VOLMWpf(TMP,VR,u,DAGGER,-MDW,SRF)
+          DR=-zi*mass*(-TMP+VR)/two
+          DR=DL+DR
         endif
 
       endif
@@ -113,6 +136,42 @@
       end associate
       return
       end subroutine VOLMWpf
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine VOLMWpfDag(RR,S,u,DAGGER,dwmass,SRF) 
+      use options
+!     approximate Wilson Voverlap using partial fraction rational functions with a multishift cg method
+      implicit none
+      complex(prc) RR(Nv,4),S(Nv,4)
+      complex(prc) u(Nv,3)
+      logical DAGGER
+      real(prc) dwmass
+      type(sgnratfunc),intent(in) :: SRF
+      complex(prc) add,coef
+      complex(prc) TMP1(Nv,4),TMP2(Nv,4)
+      integer j,p,nn,nd,nf
+      real(prc) mult
+      if(VB_OL)then ; print *,"VOLMWpf" ; endif
+
+      associate(front => SRF%pfrf%front%coeffs,
+     &          num => SRF%frf%num%zeros,
+     &          denom => SRF%pfrf%denom%zeros,
+     &          pf => SRF%pfrf%pf)
+
+      nn=size(num)
+      nd=size(denom)
+      if(VB_OL)then ; print *,"nn",nn,"nd",nd ; endif
+      nf=nn-nd+1
+      call DWilson(RR,TMP1,u,DAGGER,dwmass)
+      S=zero
+      if (nf.ge.1) then ! it should only ever be 0 or 1
+        S=front(1)*TMP1
+      end if
+      call MSCGW(TMP1,S,u,.false.,dwmass,SRF) ! S=S+...
+      S=SRF%mult*S
+
+      end associate
+      return
+      end subroutine VOLMWpfDag
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine MSCGW(rhs,DR,u,DAGGER,dwmass,SRF)
       use options
@@ -134,7 +193,7 @@ c      procedure(),pointer :: Mptr
       real(prc) alpham1,alpha,beta,betap1,dnm,conv,cns,drr,drp1rp1
 
       if(VB_OL)then ; print *,"MSCGW" ; endif
-      maxit=10*Nv
+      maxit=10*Nv*4*10
       associate(sigma => SRF%pfrf%denom%zeros,
      &          mult => SRF%pfrf%pf)
 
@@ -165,7 +224,7 @@ c      procedure(),pointer :: Mptr
         alpha=drr/dopr(P(:,:,1),B)
         Rp1=R-alpha*B
         drp1rp1=dopr(Rp1,Rp1)
-        if(VB_OL)then ; print *,"drp1rp1:",drp1rp1 ; endif
+!        if(VB_OL)then ; print *,"drp1rp1:",drp1rp1 ; endif
         betap1=drp1rp1/drr
         Z(:,:,1)=Z(:,:,1)+alpha*P(:,:,1)
         P(:,:,1)=Rp1+betap1*P(:,:,1)
@@ -179,17 +238,21 @@ c      procedure(),pointer :: Mptr
         end do
         beta=betap1
         conv=sqrt(drp1rp1/dnm)
-        if(VB_OL)then ; print *,"beta:",beta,"conv:",conv ; endif
-       
+!        if(VB_OL)then ; print *,"beta:",beta,"conv:",conv ; endif
+!        if(VB_OL) print *,maxval(abs(Z(:,:,nsr)-Zm1ns))
+!        if (VB_OL) print *,maxval(abs(Z(:,:,nsr)))
         cns=maxval(abs(Z(:,:,nsr)-Zm1ns))/maxval(abs(Z(:,:,nsr)))
-        if (cns.lt.1d-18) then
-          ocount(nsr)=it
-          nsr=nsr-1
-          if (nsr.eq.0) then
-            goto 501
-          endif
-        endif
-        if (conv.lt.1d-10) then
+!        if (cns.lt.1d-30) then
+!          if(VB_OL)then ; print *,"cns converged (1d30):",cns; endif
+!          ocount(nsr)=it
+!          nsr=nsr-1
+!          if (nsr.eq.0) then
+!            goto 501
+!          endif
+!        endif
+        if (conv.lt.1d-12) then
+          if(VB_OL)then ; print *,"conv converged (1d-12):",cns; endif
+          if(VB_OL)then ; print *,"beta:",beta,"conv:",conv ; endif
           goto 501
         endif
         alpham1=alpha
@@ -197,6 +260,7 @@ c      procedure(),pointer :: Mptr
         gamm1=gam
         gam=gamp1
       end do
+      if(VB_OL)then ; print *,"not converged"; endif
 
 501   continue
       do o=1,ns
@@ -295,8 +359,10 @@ c      print *,"cval:",cval
       if (VB_OL) then ; print *,"IMdagMOpts" ; end if ;
 c     initialise
       DR=RR
-      call Mptr(RR,x1,u,DAGGER,iopts%mass,iopts%SRF)
-      call Mptr(x1,x2,u,.not.DAGGER,iopts%mass,iopts%SRF)
+!      call Mptr(RR,x1,u,DAGGER,iopts%mass,iopts%SRF)
+!      call Mptr(x1,x2,u,.not.DAGGER,iopts%mass,iopts%SRF)
+      call Mptr(RR,x1,u,.false.,iopts%mass,iopts%SRF)
+      call Mptr(x1,x2,u,.true.,iopts%mass,iopts%SRF)
       r=RR-x2
       p=r
       betan=sum(conjg(r)*r)
@@ -304,8 +370,10 @@ c     initialise
       
       do i=1,niterc
         itercg=itercg+1
-        call Mptr(p,x1,u,DAGGER,iopts%mass,iopts%SRF)
-        call Mptr(x1,x2,u,.not.DAGGER,iopts%mass,iopts%SRF)
+!        call Mptr(p,x1,u,DAGGER,iopts%mass,iopts%SRF)
+!        call Mptr(x1,x2,u,DAGGER,iopts%mass,iopts%SRF)
+        call Mptr(p,x1,u,.false.,iopts%mass,iopts%SRF)
+        call Mptr(x1,x2,u,.true.,iopts%mass,iopts%SRF)
         alphan=sum(conjg(r)*r)
         alphad=sum(conjg(p)*x2)
         alpha=alphan/alphad

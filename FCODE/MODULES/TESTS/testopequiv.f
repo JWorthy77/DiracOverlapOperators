@@ -15,7 +15,7 @@
 !      call equivVOLW()
 !      call equivVOLS()
 c      call equivDOL()
-      call equivDOL_DDW()
+      call equivDOL_DDW_Wilson()
 
       return
       end subroutine testOperatorEquivalence
@@ -191,7 +191,7 @@ c      print *,'err(DAGGER) ',err
 
       end subroutine equivDOL
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine equivDOL_DDW()
+      subroutine equivDOL_DDW_Wilson()
       use gammas
       use overlapmoduledev
       use dwcoeffs
@@ -200,6 +200,7 @@ c      print *,'err(DAGGER) ',err
       use rvmodule
       use gaugefield
       use kernelspectrarange
+      use VOLmodule
       implicit none
       complex(prc),dimension(Nv,4) :: RR,DR1,DR2,TMP
       real(prc) :: err
@@ -207,28 +208,117 @@ c      print *,'err(DAGGER) ',err
       type(zolotarev) :: zolo
       integer i1,i2
       real(prc) lmin,lmax
+      real(prc),dimension(Nv,3) :: thetastore
       complex(prc) :: R5(Nv,4,Ls)
       complex(prc) :: DR5(Nv,4,Ls)
       complex(prc) :: TMP5(Nv,4,Ls)
 
+!      call setHTcoeffs(Ls,SRF)
       call getMinMaxHEigs(lmin,lmax)
+      lmin=5e-2 ; lmax=10.0
       call setZoloCoeffs(Ls,SRF,lmin,lmax)
       call setZolo(lmin,lmax,Ls,zolo)
       call getRoots(zolo)
       omega=one/zolo%roots
-      
-      print *,zolo%roots
-      call setRVs(Nv*4,RR)
-!      call setHTcoeffs(Ls,SRF)
-
-      baremass=0.05
+      print *,"roots:",zolo%roots
       print *,"omega:",omega
 
+      call setRVs(Nv*4,RR)
+      call setGRVs(Nv*3,thetastore)
+      theta=thetastore
+      call coef(u,theta)
+
+      print *,""
+      print *,"TEST INVERSION OF OVERLAP WILSON FORMULATIONS"
+      print *,""
+
+      baremass=0.05
+      MTYPE=1
+      print *,"baremass:",baremass
+      print *,"MTYPE:",MTYPE
+      print *,"DAGGER:    false"
+      call DOverlap(RR,DR1,u,.false.,baremass,SRF)
+      call IDOverlap(DR1,DR2,u,.false.,baremass,SRF)
+      print *,"DOL.IDOL:",maxval(abs(DR2-RR))
+      call IDOverlap(RR,DR1,u,.false.,baremass,SRF)
+      call DOverlap(DR1,DR2,u,.false.,baremass,SRF)
+      print *,"IDOL.DOL:",maxval(abs(DR2-RR))
+
+      baremass=0.05
+      MTYPE=1
+      print *,""
+      print *,"baremass:",baremass
+      print *,"MTYPE:",MTYPE
+      print *,"DAGGER:    true"
+!      print *,"dwkernel:",dwkernel
+      call DOverlap(RR,DR1,u,.true.,baremass,SRF)
+      call IDOverlap(DR1,DR2,u,.true.,baremass,SRF)
+      print *,"DOL.IDOL:",maxval(abs(DR2-RR))
+      call IDOverlap(RR,DR1,u,.true.,baremass,SRF)
+      call DOverlap(DR1,DR2,u,.true.,baremass,SRF)
+      print *,"IDOL.DOL:",maxval(abs(DR2-RR))
+
+      baremass=0.05
+      MTYPE=3
+      print *,""
+      print *,"baremass:",baremass
+      print *,"MTYPE:",MTYPE
+      print *,"DAGGER:    false"
+      call DOverlap(RR,DR1,u,.false.,baremass,SRF)
+      call IDOverlap(DR1,DR2,u,.false.,baremass,SRF)
+      print *,"DOL.IDOL:",maxval(abs(DR2-RR))
+      call IDOverlap(RR,DR1,u,.false.,baremass,SRF)
+      call DOverlap(DR1,DR2,u,.false.,baremass,SRF)
+      print *,"IDOL.DOL:",maxval(abs(DR2-RR))
+
+      baremass=0.05
+      MTYPE=3
+      print *,""
+      print *,"baremass:",baremass
+      print *,"MTYPE:",MTYPE
+      print *,"DAGGER:    true"
+!      print *,"dwkernel:",dwkernel
+      call DOverlap(RR,DR1,u,.true.,baremass,SRF)
+      call IDOverlap(DR1,DR2,u,.true.,baremass,SRF)
+      print *,"DOL.IDOL:",maxval(abs(DR2-RR))
+      call IDOverlap(RR,DR1,u,.true.,baremass,SRF)
+      call DOverlap(DR1,DR2,u,.true.,baremass,SRF)
+      print *,"IDOL.DOL:",maxval(abs(DR2-RR))
+
+
+      print *,""
+      print *,""
+      print *,"TEST EQUIVALENCE OF OVERLAP AND DOMAIN WALL FORMULATIONS"
+      print *," -- Wilson Free Aux Field"
+      print *,""
+
+!      theta=0
+!      call coef(u,theta)
+
+      baremass=0.05
       MTYPE=1
       dwkernel=3
+
+      open(unit=100,file="fort.100", status='unknown')
+      write(100,*) u
+      close(100)
+
+      call VOLpf(RR,DR1,u,.false.,-MDW,SRF)
+      open(unit=99,file="fort.99", status='unknown')
+      write(99,*) DR1
+      close(99)
+
+
       call KDDW4(RR,DR1,u,.false.,baremass)
+      open(unit=110,file="fort.110", status='unknown')
+      write(110,*) DR1
+      close(110)
+
       dwkernel=2
       call DOLop(RR,DR2,u,.false.,baremass,SRF)
+      open(unit=111,file="fort.111", status='unknown')
+      write(111,*) DR2
+      close(111)
       err=maxval(abs(DR1-DR2))
       print *,'DOL-KDDW4 ',err
 
@@ -236,7 +326,8 @@ c      print *,'err(DAGGER) ',err
       dwkernel=3
       call IKDDW4(RR,DR1,u,.false.,baremass)
       dwkernel=2
-      call IDOLop(RR,DR2,u,.false.,baremass,SRF)
+!      call IDOLop(RR,DR2,u,.false.,baremass,SRF)
+      call IDOverlap(DR2,DR1,u,.false.,baremass,SRF)
       err=maxval(abs(DR1-DR2))
       print *,'IDOL-IKDDW4 ',err
 
@@ -339,7 +430,7 @@ ccc   move the following to gamhermtest
       print *,'err(DAGGER) ',err
 
       return
-      end subroutine equivDOL_DDW
+      end subroutine equivDOL_DDW_Wilson
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine outputKDDW4()
       use gammas

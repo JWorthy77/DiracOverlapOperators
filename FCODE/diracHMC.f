@@ -6,10 +6,29 @@
       use options
       use gaugemodule
       use condmod
+      use gammas
+      use paulimodule
+      use indices
       implicit none
       integer j
+      double precision num
 
       print *,"Start program Dirac HMC"
+
+      if (.false.) then
+        print *,"Start tests"
+        theta=0
+        GAUGETYPE=2 ! 1=compact 2=non-compact link field
+        MDW=one ! domain wall height
+        call setGammas
+        call setPauliMatrices
+        call setIndices
+        call coef(u,theta)
+        call test()
+        print *,"End tests"
+        stop
+      end if
+
       call init()
 
       DUPLICATE=.false.
@@ -23,7 +42,7 @@
       do j=1,Naux
         print *,"make field ",j," of ",Naux
         call makeGaugeField(.false.)
-        call measureCondensateInstance()
+!        call measureCondensateInstance()
       end do
 !      call  averageCondensate();
 
@@ -54,7 +73,9 @@
 
       call init_timer()
 
-      GAUGETYPE=2 ! 1=compact 2=non-compact
+      HMCtype=2 ! 1:HMC-DW, 2: HMC-OL, 3:RHMC-DW
+      Nferms=1 ! hmmm ... take this out, beta controls this too
+      GAUGETYPE=2 ! 1=compact 2=non-compact link field
       MDW=one ! domain wall height
 
       MTYPE=3 ! mass term type
@@ -68,7 +89,7 @@
       HMC_tsmax=1000
       QUENCHED=.false.
 
-      Naux=500
+      Naux=10
       Nswp=5
 
       open(unit=11,file="caseInput.dat",status='unknown')
@@ -97,14 +118,17 @@
 #endif
 
       theta=0
-      call setGRVs(3*Nv,theta)
+!      call setGRVs(3*Nv,theta)
+      call setRealRVs(3*Nv,theta)
+      theta=theta-0.5d0
+      write(150,*) theta
       call coef(u,theta)
 
       omega=1.0
       if (dwkernel.eq.3) then
-        call setZolo(1d-1,10d0,Ls,zolo)
+        call setZolo(5d-2,5d0,Ls,zolo)
         call getRoots(zolo)
-        omega=zolo%roots
+        omega=one/zolo%roots
         print *,"omega:",omega
       end if
 
@@ -116,5 +140,16 @@
 
        return
        end subroutine finalise
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine test()
+      use testDequivmod
+      implicit none
+
+       call convKDDW4()
+!       call equivOLmtype()
+!       call equivDOL_DDW()
+
+       return
+       end subroutine test
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

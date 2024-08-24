@@ -60,7 +60,7 @@
       complex(prc) :: rv(Nv,Ls,4),pff(Nv,4,Ls)
       integer ii,id,il
 
-      call setCGRVs(4*Nv*Ls,TMP) ! randomise pseudo-fermion field
+!      call setCGRVs(4*Nv*Ls,TMP) ! randomise pseudo-fermion field
       if (DUPLICATE) then
         TMP=ps
       else
@@ -80,6 +80,8 @@
 !      write(122,*) transToThere(TMP)
       call DDW(TMP,ps,ut,.false.,one)   ! SJH sets to 1?
 !      write(123,*) transToThere(ps)
+
+!     ps=DDW(1).DDW(1)^-1.DDWdag(1)^-1.DDWdag(m)
 
 !      write(108,*) sum(abs(rv*rv))/(Nv*Ls*4),sum(abs(ps*ps))/(Nv*Ls*4)
 
@@ -298,7 +300,7 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       do ithird=1,Ls
         X1s=X1(:,:,ithird)
         Rs=R(:,:,ithird)
-        call WilsonDerivsSJH(dSdASub,X1s,Rs,.true.) 
+!        call WilsonDerivsSJH(dSdASub,X1s,Rs,.true.) 
         dSdAsub=2*dSdAsub
         dSdA3=dSdA3+dSdAsub
       end do
@@ -309,7 +311,7 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       do ithird=1,Ls
         X1s=X1(:,:,ithird)
         Rs=R(:,:,ithird)
-        call WilsonDerivsJW(dSdASub,X1s,Rs,.true.) 
+!        call WilsonDerivsJW(dSdASub,X1s,Rs,.true.) 
         dSdAsub=2*dSdAsub
         dSdA4=dSdA4+dSdAsub
       end do
@@ -330,7 +332,7 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       dSdA6=2*dSdA6
       print *,"sum(ferm dSdpi):",sum(dSdA1),sum(dSdA1*dSdA1)
 
-      dSdA=dSdA+dSdA1
+      dSdA=-dSdA1
 !      write(226,*) dSdA1
 !      write(227,*) dSdA2
 !      print *,"sum(ferm dSdA):",sum(dSdA1),sum(dSdA1*dSdA1)
@@ -396,14 +398,14 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       call DDW(ps,TMP,ut,.false.,one)
       MTYPE=baseMTYPE;
       call IDDWdagDDW(TMP,nu,ut,baremass)
-      call DomainWallDerivsComplex(dSdA1,eta,nu,.true.,KTYPE)
+      call DomainWallDerivsComplex(dSdA1,eta,nu,.true.,KTYPE,zero)
       ! Odag.(Q^dag.Q)^-1. dOdA
       nu=ps
       MTYPE=1;
       call DDW(ps,TMP,ut,.false.,one)
       MTYPE=baseMTYPE;
       call IDDWdagDDW(TMP,eta,ut,baremass)
-      call DomainWallDerivsComplex(dSdA2,eta,nu,.false.,KTYPE)
+      call DomainWallDerivsComplex(dSdA2,eta,nu,.false.,KTYPE,zero)
 
       ! Odag.(QdagQ)^-1.dQdagdA.Q.(QdagQ)^-1.O
       MTYPE=1;
@@ -412,7 +414,7 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       call IDDWdagDDW(TMP,chi,ut,baremass)
       eta=chi
       call DDW(chi,nu,ut,.false.,baremass)
-      call DomainWallDerivsComplex(dSdA3,eta,nu,.true.,KTYPE)
+      call DomainWallDerivsComplex(dSdA3,eta,nu,.true.,KTYPE,zero)
 
       ! Odag.(QdagQ)^-1.Qdagd.dQdA.(QdagQ)^-1.O
       MTYPE=1;
@@ -421,7 +423,7 @@ c     dSdpi=dSdpi-Re(X1dagger *(d(Mdagger)dp)* R)
       call IDDWdagDDW(TMP,chi,ut,baremass)
       nu=chi
       call DDW(chi,eta,ut,.false.,baremass)
-      call DomainWallDerivsComplex(dSdA4,eta,nu,.false.,KTYPE)
+      call DomainWallDerivsComplex(dSdA4,eta,nu,.false.,KTYPE,zero)
 
 !      print *,"cmplx 0:",maxval(abs(aimag(dSdA1+dSdA2)))
 !      print *,"cmplx 0:",maxval(abs(aimag(dSdA1+dSdA2+dSdA3+dSdA4)))
